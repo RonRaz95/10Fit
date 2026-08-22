@@ -91,6 +91,11 @@
     .brand h1 span { color: var(--accent); }
 
     .icon-btn {
+      /* width/margin reset the global `input, select, button` rule above, which
+         would otherwise stretch these to 100% and push the icon off the edge. */
+      width: auto;
+      flex: 0 0 auto;
+      margin: 0;
       background: transparent;
       border: none;
       color: var(--text);
