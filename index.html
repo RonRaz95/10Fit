@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+  <meta name="theme-color" content="#14161b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="10Fit">
+
+  <!-- PWA Manifest Link -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+
+  <title>10Fit - Pro Gym Companion</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #14161b;
+      --bg-elevated: #1d2027;
+      --bg-input: #262a33;
+      --accent: #e8a33d;
+      --accent-dim: #b97f2a;
+      --accent-ink: #14161b;
+      --teal: #4fd1c5;
+      --violet: #8b7bff;
+      --text: #f2efe9;
+      --text-sub: #9aa0ab;
+      --border: #2f333d;
+      --danger: #ef5b5b;
+      --success: #52c785;
+      --font-display: 'Oswald', -apple-system, sans-serif;
+      --font-body: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --sidebar-w: min(280px, 82vw);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { overflow-x: hidden; width: 100%; }
+
+    body {
+      font-family: var(--font-body);
+      background-color: var(--bg);
+      background-image:
+        radial-gradient(circle at 12% 0%, rgba(232, 163, 61, 0.08), transparent 40%),
+        radial-gradient(circle at 90% 8%, rgba(79, 209, 197, 0.06), transparent 35%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; animation: none !important; }
+    }
+
+    header {
+      background: var(--bg-elevated);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand { display: flex; align-items: center; gap: 10px; }
+
+    .brand h1 {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+    .brand h1 span { color: var(--accent); }
+
+    .icon-btn {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      cursor: pointer;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+    }
+    .icon-btn:hover { background: var(--bg-input); }
+    .icon-btn svg { width: 22px; height: 22px; }
+
+    #auth-status-indicator {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--text-sub);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    #auth-status-indicator .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-sub); flex-shrink: 0; }
+    #auth-status-indicator.synced { color: var(--success); }
+    #auth-status-indicator.synced .dot { background: var(--success); box-shadow: 0 0 6px var(--success); }
+
+    .sidebar-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 11, 14, 0.6);
+      backdrop-filter: blur(3px);
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .sidebar-overlay.open { opacity: 1; pointer-events: auto; }
+
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: var(--sidebar-w);
+      height: 100%;
+      height: 100dvh;
+      background: var(--bg-elevated);
+      z-index: 201;
+      transform: translateX(-100%);
+      transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      padding: 18px 14px;
+      border-right: 1px solid var(--border);
+      will-change: transform;
+    }
+    .sidebar.open { transform: translateX(0); }
+
+    .sidebar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-header h2 {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-sub);
+    }
+
+    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+
+    .nav-item {
+      padding: 12px 14px;
+      border-radius: 8px;
+      color: var(--text-sub);
+      font-weight: 600;
+      font-size: 0.92rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-left: 3px solid transparent;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+    .nav-item svg { width: 19px; height: 19px; flex-shrink: 0; }
+    .nav-item:hover { background: var(--bg-input); color: var(--text); }
+    .nav-item.active { background: rgba(232, 163, 61, 0.1); color: var(--accent); border-left-color: var(--accent); }
+
+    main { flex: 1; padding: 16px; max-width: 600px; margin: 0 auto; width: 100%; }
+
+    .view-section { display: none; }
+    .view-section.active { display: block; animation: fadeIn 0.2s ease; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    .card {
+      background: var(--bg-elevated);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 14px;
+      border: 1px solid var(--border);
+    }
+
+    .card h2, .card h3 {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    .card > p.hint { font-size: 0.83rem; color: var(--text-sub); margin-top: -6px; margin-bottom: 12px; line-height: 1.4; }
+
+    label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      color: var(--text-sub);
+      margin-bottom: 6px;
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-input);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      margin-bottom: 12px;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+    input::placeholder { color: var(--text-sub); }
+    input:focus, select:focus { border-color: var(--accent); }
+
+    button { cursor: pointer; font-weight: 700; letter-spacing: 0.02em; }
+
+    button.btn-primary { background: var(--accent); color: var(--accent-ink); border: none; }
+    button.btn-primary:hover { background: #f2ae4c; }
+
+    button.btn-secondary { background: var(--bg-input); color: var(--text); border: 1px solid var(--border); }
+    button.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+    button.btn-teal { background: var(--teal); color: #0b2422; border: none; }
+    button.btn-teal:hover { background: #6adfd4; }
+
+    button.btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+    button.btn-danger:hover { background: rgba(239, 91, 91, 0.12); }
+
+    button.btn-icon {
+      width: auto;
+      background: transparent;
+      border: none;
+      color: var(--text-sub);
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 4px 8px;
+      margin: 0;
+    }
+    button.btn-icon:hover { color: var(--text); }
+
+    .set-row { display: grid; grid-template-columns: 52px 1fr 1fr; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .set-row span { font-size: 0.78rem; font-weight: 600; color: var(--text-sub); font-variant-numeric: tabular-nums; }
+    .set-row input { margin-bottom: 0; text-align: center; }
+
+    .btn-add-set {
+      background: transparent;
+      color: var(--accent);
+      border: 1px dashed var(--accent-dim);
+      padding: 8px;
+      font-size: 0.82rem;
+      border-radius: 6px;
+    }
+    .btn-add-set:hover { background: rgba(232, 163, 61, 0.08); }
+
+    .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 4px; }
+
+    .chart-container { position: relative; height: 250px; width: 100%; margin-top: 8px; }
+
+    .ai-box {
+      background: rgba(139, 123, 255, 0.08);
+      border: 1px solid var(--violet);
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      white-space: pre-line;
+      color: #e7e3ff;
+    }
+
+    .empty-state { text-align: center; padding: 24px 12px; color: var(--text-sub); font-size: 0.88rem; }
+
+    .exercise-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); gap: 10px; }
+    .exercise-row:last-child { border-bottom: none; }
+    .exercise-row .row-name { min-width: 0; overflow-wrap: anywhere; }
+    .exercise-row .row-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .exercise-row .tag {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: rgba(232, 163, 61, 0.1);
+      padding: 3px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .program-row { display: flex; justify-content: space-between; align-items: center; background: var(--bg-input); padding: 10px 14px; border-radius: 8px; margin-bottom: 8px; gap: 10px; }
+    .program-row strong { font-weight: 700; }
+    .program-row .count { color: var(--text-sub); font-size: 0.85rem; }
+
+    .chip-row { display: flex; justify-content: space-between; align-items: center; background: var(--bg-input); padding: 8px 12px; border-radius: 6px; margin-bottom: 6px; font-size: 0.9rem; }
+
+    .action-menu {
+      position: fixed;
+      z-index: 500;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 6px;
+      min-width: 150px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .action-menu-item {
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      padding: 9px 10px;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      letter-spacing: normal;
+      text-transform: none;
+      margin: 0;
+      cursor: pointer;
+    }
+    .action-menu-item:hover, .action-menu-item:focus-visible { background: var(--bg-input); }
+    .action-menu-item.danger { color: var(--danger); }
+    .action-menu-item.danger:hover { background: rgba(239,91,91,0.1); }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 11, 14, 0.7);
+      backdrop-filter: blur(3px);
+      z-index: 300;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-overlay.confirm-overlay { z-index: 350; }
+
+    .modal-content {
+      background: var(--bg-elevated);
+      border-radius: 12px;
+      padding: 20px;
+      width: 100%;
+      max-width: 460px;
+      border: 1px solid var(--border);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-content h3 { font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.02em; }
+    .modal-content p.body-text { font-size: 0.92rem; line-height: 1.55; color: var(--text); margin-bottom: 18px; }
+
+    #toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--bg-elevated);
+      border: 1px solid var(--accent-dim);
+      color: var(--text);
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      z-index: 400;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      max-width: 90vw;
+      text-align: center;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.error { border-color: var(--danger); }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header>
+    <button class="icon-btn" onclick="toggleSidebar()" aria-label="Open menu" aria-expanded="false" aria-controls="sidebar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <div class="brand">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--accent)"><rect x="1" y="9" width="3" height="6" rx="0.5" fill="currentColor" stroke="none"/><rect x="4" y="7" width="2.5" height="10" rx="0.5" fill="currentColor" stroke="none"/><line x1="6.5" y1="12" x2="17.5" y2="12"/><rect x="17" y="7" width="2.5" height="10" rx="0.5" fill="currentColor" stroke="none"/><rect x="20" y="9" width="3" height="6" rx="0.5" fill="currentColor" stroke="none"/></svg>
+      <h1>10<span>Fit</span></h1>
+    </div>
+    <div id="auth-status-indicator"><span class="dot"></span><span id="auth-status-text">Local</span></div>
+  </header>
+
+  <!-- Left Sidebar Drawer -->
+  <div id="sidebar-overlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+  <aside id="sidebar" class="sidebar" aria-hidden="true">
+    <div class="sidebar-header">
+      <h2>Menu</h2>
+      <button class="icon-btn" onclick="closeSidebar()" aria-label="Close menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <ul class="nav-list">
+      <li class="nav-item active" data-view="workout" onclick="navigate('workout', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="9" width="3" height="6" rx="0.5"/><rect x="4" y="7" width="2.5" height="10" rx="0.5"/><line x1="6.5" y1="12" x2="17.5" y2="12"/><rect x="17" y="7" width="2.5" height="10" rx="0.5"/><rect x="20" y="9" width="3" height="6" rx="0.5"/></svg>
+        Workout Tracker
+      </li>
+      <li class="nav-item" data-view="programs" onclick="navigate('programs', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/></svg>
+        Program Builder
+      </li>
+      <li class="nav-item" data-view="exercises" onclick="navigate('exercises', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 15c-2 0-3-1.5-3-3s1-3 3-3"/><path d="M6 9c0-2.5 2-4.5 5-4.5 4 0 6 3 6 6.5 0 3-1.5 5-4 5.5"/><circle cx="17" cy="17" r="3"/></svg>
+        Muscles & Exercises
+      </li>
+      <li class="nav-item" data-view="ai" onclick="navigate('ai', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="8" width="16" height="12" rx="3"/><circle cx="9" cy="14" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="14" r="1.4" fill="currentColor" stroke="none"/><line x1="12" y1="8" x2="12" y2="4"/><circle cx="12" cy="3" r="1" fill="currentColor" stroke="none"/></svg>
+        AI Coach
+      </li>
+      <li class="nav-item" data-view="analytics" onclick="navigate('analytics', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="20" x2="20" y2="20"/><rect x="6" y="12" width="3" height="8"/><rect x="11" y="7" width="3" height="13"/><rect x="16" y="14" width="3" height="6"/></svg>
+        Analytics
+      </li>
+      <li class="nav-item" data-view="cloud" onclick="navigate('cloud', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 18a4 4 0 0 1-1-7.9A5 5 0 0 1 15.5 8a4.5 4.5 0 0 1 .5 9H7Z"/></svg>
+        Cloud & Account
+      </li>
+    </ul>
+  </aside>
+
+  <!-- Main Body Content -->
+  <main>
+    <section id="view-workout" class="view-section active">
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <label style="margin:0;">Choose Program to Train</label>
+          <button id="workout-program-options-btn" class="btn-icon" style="display:none;" onclick="openProgramOptionsMenu(this)" aria-label="Program options">⋮</button>
+        </div>
+        <select id="select-active-program" onchange="startWorkoutSession()">
+          <option value="">-- Select Workout --</option>
+        </select>
+      </div>
+
+      <div id="active-workout-container"></div>
+    </section>
+
+    <section id="view-programs" class="view-section">
+      <div class="card">
+        <h3>Preset Workout Splits</h3>
+        <p class="hint">Load a structured split directly into your programs:</p>
+        <div class="preset-grid">
+          <button class="btn-secondary" onclick="loadPreset('ppl')">Push / Pull / Legs</button>
+          <button class="btn-secondary" onclick="loadPreset('upperlower')">Upper / Lower</button>
+          <button class="btn-secondary" onclick="loadPreset('brosplit')">Bro Split (5 Day)</button>
+          <button class="btn-secondary" onclick="loadPreset('fullbody')">Full Body (3 Day)</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Existing Programs</h3>
+        <p class="hint">Tap ⋮ on a program to rename it, edit its exercises, or delete it.</p>
+        <div id="programs-list-manage"></div>
+      </div>
+
+      <div class="card">
+        <h3>Build Custom Program</h3>
+        <input type="text" id="new-program-name" placeholder="Program Title (e.g. Chest & Arms)">
+
+        <label>Add Exercise from Database</label>
+        <div style="display: flex; gap: 8px;">
+          <select id="program-exercise-picker"></select>
+          <button class="btn-secondary" style="width: auto; padding: 0 16px;" onclick="addExerciseToProgramBuilder()">Add</button>
+        </div>
+
+        <div id="selected-exercises-list" style="margin: 12px 0;"></div>
+        <button class="btn-primary" onclick="saveCustomProgram()">Save Program</button>
+      </div>
+    </section>
+
+    <section id="view-exercises" class="view-section">
+      <div class="card">
+        <h3>Add Custom Exercise</h3>
+        <input type="text" id="custom-ex-name" placeholder="Exercise Name (e.g. Incline Cable Fly)">
+        <label>Muscle Group</label>
+        <select id="custom-ex-group">
+          <option value="Chest">Chest</option>
+          <option value="Back">Back</option>
+          <option value="Legs">Legs</option>
+          <option value="Shoulders">Shoulders</option>
+          <option value="Arms">Arms</option>
+          <option value="Core">Core</option>
+        </select>
+        <button class="btn-primary" onclick="addNewCustomExercise()">Add Exercise to Database</button>
+      </div>
+
+      <div class="card">
+        <h3>Exercise Database</h3>
+        <p class="hint">Tap ⋮ next to any exercise to rename it, move it to another muscle group, or delete it.</p>
+        <label>Filter by Muscle Group</label>
+        <select id="filter-muscle-group" onchange="renderExerciseDatabase()">
+          <option value="All">All Muscle Groups</option>
+          <option value="Chest">Chest</option>
+          <option value="Back">Back</option>
+          <option value="Legs">Legs</option>
+          <option value="Shoulders">Shoulders</option>
+          <option value="Arms">Arms</option>
+          <option value="Core">Core</option>
+        </select>
+        <div id="exercise-db-list" style="margin-top: 8px;"></div>
+      </div>
+    </section>
+
+    <section id="view-ai" class="view-section">
+      <div class="card">
+        <h3>AI Coach Settings</h3>
+        <p class="hint">Connect your AI endpoint to analyze your training data.</p>
+
+        <label>API Endpoint URL</label>
+        <input type="text" id="ai-endpoint-input" placeholder="https://...">
+
+        <button class="btn-secondary" style="margin-bottom:0;" onclick="saveAiSettings()">Save AI Settings</button>
+        <p class="hint" style="margin-top:10px; margin-bottom:0;">Your endpoint is stored only on this device.</p>
+      </div>
+
+      <div class="card">
+        <h3>Smart Training Analysis</h3>
+        <p class="hint">Analyze fatigue, plateaus, and get deload or substitution recommendations based on your logged sessions.</p>
+        <button class="btn-teal" onclick="runAiAnalysis()">Run AI Progress Analysis</button>
+      </div>
+
+      <div id="ai-response-card" class="card" style="display: none;">
+        <h3>AI Coach Recommendations</h3>
+        <div id="ai-response-text" class="ai-box"></div>
+      </div>
+    </section>
+
+    <section id="view-analytics" class="view-section">
+      <div class="card">
+        <h3>Progress Over Time</h3>
+        <label>Select Exercise</label>
+        <select id="analytics-picker" onchange="renderAnalyticsChart()"></select>
+        <div class="chart-container">
+          <canvas id="progressChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-cloud" class="view-section">
+      <div id="auth-box" class="card">
+        <h3>Cloud Sync</h3>
+        <p class="hint">Sign in to back up your programs and history and access them on any device.</p>
+        <label>Email</label>
+        <input type="email" id="cloud-email" placeholder="you@example.com">
+        <label>Password</label>
+        <input type="password" id="cloud-pass" placeholder="••••••••">
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-primary" style="margin-bottom:0;" onclick="loginCloud()">Log In</button>
+          <button class="btn-secondary" style="margin-bottom:0;" onclick="registerCloud()">Sign Up</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modals -->
+  <div id="program-modal" class="modal-overlay" onclick="if(event.target===this) closeProgramModal()">
+    <div class="modal-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 id="modal-program-title" style="margin: 0;">Edit Program</h3>
+        <button class="icon-btn" onclick="closeProgramModal()" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <label>Program Name</label>
+      <input type="text" id="modal-edit-title">
+
+      <label>Exercises in Program</label>
+      <div id="modal-exercises-list" style="margin-bottom: 12px;"></div>
+
+      <label>Add Exercise to Program</label>
+      <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+        <select id="modal-add-ex-picker"></select>
+        <button class="btn-secondary" style="width: auto; padding: 0 16px;" onclick="addExerciseInModal()">Add</button>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <button class="btn-primary" style="margin-bottom:0;" onclick="saveProgramModalChanges()">Save Changes</button>
+        <button class="btn-danger" style="margin-bottom:0;" onclick="deleteProgramFromModal()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="exercise-modal" class="modal-overlay" onclick="if(event.target===this) closeExerciseModal()">
+    <div class="modal-content" style="max-width: 420px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="margin: 0;">Edit Exercise</h3>
+        <button class="icon-btn" onclick="closeExerciseModal()" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <label>Exercise Name</label>
+      <input type="text" id="exercise-modal-name">
+
+      <label>Muscle Group</label>
+      <select id="exercise-modal-group">
+        <option value="Chest">Chest</option>
+        <option value="Back">Back</option>
+        <option value="Legs">Legs</option>
+        <option value="Shoulders">Shoulders</option>
+        <option value="Arms">Arms</option>
+        <option value="Core">Core</option>
+      </select>
+
+      <div style="display: flex; gap: 8px; margin-top: 4px;">
+        <button class="btn-primary" style="margin-bottom:0;" onclick="saveExerciseModalChanges()">Save Changes</button>
+        <button class="btn-danger" style="margin-bottom:0;" onclick="deleteExerciseFromModal()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="confirm-modal" class="modal-overlay confirm-overlay" onclick="if(event.target===this) closeConfirmModal()">
+    <div class="modal-content" style="max-width: 380px;">
+      <p id="confirm-modal-text" class="body-text"></p>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn-secondary" style="margin-bottom:0;" onclick="closeConfirmModal()">Cancel</button>
+        <button class="btn-danger" style="margin-bottom:0;" id="confirm-modal-confirm-btn">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('Service Worker registered:', reg.scope))
+          .catch(err => console.error('Service Worker registration failed:', err));
+      });
+    }
+  </script>
+
+  <!-- Firebase Integration -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "YOUR_FIREBASE_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    let auth, db;
+    window.currentUser = null;
+
+    try {
+      const app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      db = getFirestore(app);
+
+      onAuthStateChanged(auth, async (user) => {
+        const indicator = document.getElementById('auth-status-indicator');
+        const text = document.getElementById('auth-status-text');
+        if (user) {
+          window.currentUser = user;
+          text.innerText = 'Cloud Synced';
+          indicator.classList.add('synced');
+          await window.loadCloudData();
+        } else {
+          window.currentUser = null;
+          text.innerText = 'Local Mode';
+          indicator.classList.remove('synced');
+        }
+      });
+    } catch (e) {
+      console.warn('Firebase not configured yet — running in local-only mode.', e);
+    }
+
+    window.loginCloud = async () => {
+      if (!auth) return window.showToast('Cloud sync is not configured yet.', true);
+      const email = document.getElementById('cloud-email').value.trim();
+      const pass = document.getElementById('cloud-pass').value;
+      if (!email || !pass) return window.showToast('Enter an email and password.', true);
+      try {
+        await signInWithEmailAndPassword(auth, email, pass);
+        window.showToast('Logged in successfully.');
+      } catch (e) { window.showToast('Login failed: ' + e.message, true); }
+    };
+
+    window.registerCloud = async () => {
+      if (!auth) return window.showToast('Cloud sync is not configured yet.', true);
+      const email = document.getElementById('cloud-email').value.trim();
+      const pass = document.getElementById('cloud-pass').value;
+      if (!email || !pass) return window.showToast('Enter an email and password.', true);
+      try {
+        await createUserWithEmailAndPassword(auth, email, pass);
+        window.showToast('Account created successfully.');
+      } catch (e) { window.showToast('Sign up failed: ' + e.message, true); }
+    };
+
+    window.syncToCloud = async () => {
+      if (!window.currentUser || !db) return;
+      try {
+        await setDoc(doc(db, "users", window.currentUser.uid), {
+          exercises: window.exerciseDb,
+          programs: window.programs,
+          history: window.historyData
+        });
+      } catch (e) { console.error("Sync error: ", e); }
+    };
+
+    window.loadCloudData = async () => {
+      if (!window.currentUser || !db) return;
+      try {
+        const docRef = doc(db, "users", window.currentUser.uid);
+        const snap = await getDoc(docRef);
+        if (snap.exists()) {
+          const data = snap.data();
+          window.exerciseDb = data.exercises || window.exerciseDb;
+          window.programs = data.programs || window.programs;
+          window.historyData = data.history || window.historyData;
+          saveLocal(true);
+          refreshAllUI();
+        }
+      } catch (e) { console.error("Cloud load error: ", e); }
+    };
+  </script>
+
+  <!-- Application Logic -->
+  <script>
+    const defaultExercises = [
+      { name: "Barbell Bench Press", group: "Chest" },
+      { name: "Incline Barbell Bench Press", group: "Chest" },
+      { name: "Decline Barbell Bench Press", group: "Chest" },
+      { name: "Incline Dumbbell Press", group: "Chest" },
+      { name: "Decline Dumbbell Press", group: "Chest" },
+      { name: "Flat Dumbbell Fly", group: "Chest" },
+      { name: "Low-to-High Cable Fly", group: "Chest" },
+      { name: "High-to-Low Cable Fly", group: "Chest" },
+      { name: "Pec Deck Machine Fly", group: "Chest" },
+      { name: "Dips for Chest", group: "Chest" },
+      { name: "Push-Up", group: "Chest" },
+      { name: "Chest Press Machine", group: "Chest" },
+      { name: "Smith Machine Bench Press", group: "Chest" },
+      { name: "Landmine Press", group: "Chest" },
+
+      { name: "Conventional Deadlift", group: "Back" },
+      { name: "Barbell Bent Over Row", group: "Back" },
+      { name: "T-Bar Row", group: "Back" },
+      { name: "Pendlay Row", group: "Back" },
+      { name: "Lat Pulldown (Wide Grip)", group: "Back" },
+      { name: "Underhand Lat Pulldown", group: "Back" },
+      { name: "Straight-Arm Pulldown", group: "Back" },
+      { name: "Seated Cable Row", group: "Back" },
+      { name: "Single-Arm Dumbbell Row", group: "Back" },
+      { name: "Cable Pullover", group: "Back" },
+      { name: "Pull-Up", group: "Back" },
+      { name: "Chin-Up", group: "Back" },
+      { name: "Inverted Row", group: "Back" },
+      { name: "Rack Pull", group: "Back" },
+
+      { name: "Barbell Back Squat", group: "Legs" },
+      { name: "Front Squat", group: "Legs" },
+      { name: "Romanian Deadlift", group: "Legs" },
+      { name: "Sumo Deadlift", group: "Legs" },
+      { name: "Leg Press", group: "Legs" },
+      { name: "Hack Squat", group: "Legs" },
+      { name: "Goblet Squat", group: "Legs" },
+      { name: "Bulgarian Split Squat", group: "Legs" },
+      { name: "Walking Lunge", group: "Legs" },
+      { name: "Leg Extension", group: "Legs" },
+      { name: "Seated Leg Curl", group: "Legs" },
+      { name: "Lying Leg Curl", group: "Legs" },
+      { name: "Hip Thrust", group: "Legs" },
+      { name: "Standing Calf Raise", group: "Legs" },
+      { name: "Seated Calf Raise", group: "Legs" },
+
+      { name: "Overhead Dumbbell Press", group: "Shoulders" },
+      { name: "Standing Barbell OHP", group: "Shoulders" },
+      { name: "Seated Dumbbell Press", group: "Shoulders" },
+      { name: "Arnold Press", group: "Shoulders" },
+      { name: "Machine Shoulder Press", group: "Shoulders" },
+      { name: "Dumbbell Lateral Raise", group: "Shoulders" },
+      { name: "Cable Lateral Raise", group: "Shoulders" },
+      { name: "Front Raise", group: "Shoulders" },
+      { name: "Upright Row", group: "Shoulders" },
+      { name: "Face Pull", group: "Shoulders" },
+      { name: "Reverse Pec Deck Fly", group: "Shoulders" },
+      { name: "Bent-Over Rear Delt Fly", group: "Shoulders" },
+
+      { name: "Barbell Bicep Curl", group: "Arms" },
+      { name: "EZ-Bar Curl", group: "Arms" },
+      { name: "Incline Dumbbell Curl", group: "Arms" },
+      { name: "Hammer Curl", group: "Arms" },
+      { name: "Preacher Curl", group: "Arms" },
+      { name: "Concentration Curl", group: "Arms" },
+      { name: "Cable Curl", group: "Arms" },
+      { name: "Close-Grip Bench Press", group: "Arms" },
+      { name: "Tricep Rope Pushdown", group: "Arms" },
+      { name: "Skull Crushers", group: "Arms" },
+      { name: "Overhead Dumbbell Tricep Ext", group: "Arms" },
+      { name: "Dips for Triceps", group: "Arms" },
+      { name: "Diamond Push-Up", group: "Arms" },
+
+      { name: "Hanging Leg Raise", group: "Core" },
+      { name: "Ab Wheel Rollout", group: "Core" },
+      { name: "Cable Crunch", group: "Core" },
+      { name: "Plank", group: "Core" },
+      { name: "Side Plank", group: "Core" },
+      { name: "Russian Twist", group: "Core" },
+      { name: "Bicycle Crunch", group: "Core" },
+      { name: "V-Up", group: "Core" },
+      { name: "Dead Bug", group: "Core" }
+    ];
+
+    function safeParse(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    }
+
+    window.exerciseDb = safeParse('fit_ex_db', defaultExercises);
+    window.programs = safeParse('fit_programs', {});
+    window.historyData = safeParse('fit_history', {});
+
+    let currentChart = null;
+    let tempBuilderExercises = [];
+    let activeEditingProgramName = null;
+    let tempModalExercises = [];
+    let activeEditingExerciseName = null;
+    let confirmCallback = null;
+    let toastTimer = null;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      refreshAllUI();
+      loadAiSettingsIntoForm();
+
+      document.getElementById('confirm-modal-confirm-btn').addEventListener('click', () => {
+        const cb = confirmCallback;
+        closeConfirmModal();
+        if (cb) cb();
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closeActionMenu();
+          closeSidebar();
+          closeProgramModal();
+          closeExerciseModal();
+          closeConfirmModal();
+        }
+      });
+    });
+
+    window.showToast = function (message, isError = false) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.toggle('error', !!isError);
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+    };
+
+    function showConfirm(message, onConfirm) {
+      document.getElementById('confirm-modal-text').textContent = message;
+      confirmCallback = onConfirm;
+      document.getElementById('confirm-modal').style.display = 'flex';
+    }
+    function closeConfirmModal() {
+      document.getElementById('confirm-modal').style.display = 'none';
+      confirmCallback = null;
+    }
+
+    function openActionMenu(anchorEl, actions) {
+      closeActionMenu();
+      const menu = document.createElement('div');
+      menu.className = 'action-menu';
+      menu.id = 'action-menu';
+
+      actions.forEach(a => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'action-menu-item' + (a.danger ? ' danger' : '');
+        item.textContent = a.label;
+        item.addEventListener('click', (e) => {
+          e.stopPropagation();
+          closeActionMenu();
+          a.onClick();
+        });
+        menu.appendChild(item);
+      });
+
+      document.body.appendChild(menu);
+
+      const rect = anchorEl.getBoundingClientRect();
+      let left = rect.right - menu.offsetWidth;
+      left = Math.max(8, Math.min(left, window.innerWidth - menu.offsetWidth - 8));
+      let top = rect.bottom + 6;
+      if (top + menu.offsetHeight > window.innerHeight - 8) {
+        top = rect.top - menu.offsetHeight - 6;
+      }
+      menu.style.left = left + 'px';
+      menu.style.top = top + 'px';
+
+      setTimeout(() => {
+        document.addEventListener('click', handleOutsideMenuClick);
+      }, 0);
+    }
+
+    function handleOutsideMenuClick(e) {
+      const menu = document.getElementById('action-menu');
+      if (menu && !menu.contains(e.target)) closeActionMenu();
+    }
+
+    function closeActionMenu() {
+      const menu = document.getElementById('action-menu');
+      if (menu) menu.remove();
+      document.removeEventListener('click', handleOutsideMenuClick);
+    }
+
+    function saveLocal(skipCloudSync) {
+      localStorage.setItem('fit_ex_db', JSON.stringify(window.exerciseDb));
+      localStorage.setItem('fit_programs', JSON.stringify(window.programs));
+      localStorage.setItem('fit_history', JSON.stringify(window.historyData));
+      if (!skipCloudSync && window.syncToCloud) window.syncToCloud();
+    }
+
+    function refreshAllUI() {
+      populateExercisePickers();
+      populateProgramSelect();
+      renderExerciseDatabase();
+      renderManageProgramsList();
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function jsAttr(str) {
+      return String(str)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '&quot;')
+        .replace(/\n/g, '\\n');
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      if (sidebar.classList.contains('open')) closeSidebar(); else openSidebar();
+    }
+
+    function openSidebar() {
+      document.getElementById('sidebar').classList.add('open');
+      document.getElementById('sidebar').setAttribute('aria-hidden', 'false');
+      document.getElementById('sidebar-overlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeSidebar() {
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('sidebar').setAttribute('aria-hidden', 'true');
+      document.getElementById('sidebar-overlay').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    function navigate(viewId, sourceEl) {
+      document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+
+      document.getElementById(`view-${viewId}`).classList.add('active');
+      if (sourceEl) sourceEl.classList.add('active');
+
+      closeSidebar();
+
+      if (viewId === 'analytics') populateAnalyticsPicker();
+    }
+
+    function populateExercisePickers() {
+      const picker = document.getElementById('program-exercise-picker');
+      const modalPicker = document.getElementById('modal-add-ex-picker');
+      picker.innerHTML = '';
+      modalPicker.innerHTML = '';
+
+      window.exerciseDb.forEach(ex => {
+        const opt = `<option value="${escapeHtml(ex.name)}">${escapeHtml(ex.name)} (${escapeHtml(ex.group)})</option>`;
+        picker.innerHTML += opt;
+        modalPicker.innerHTML += opt;
+      });
+    }
+
+    function addNewCustomExercise() {
+      const nameInput = document.getElementById('custom-ex-name');
+      const name = nameInput.value.trim();
+      const group = document.getElementById('custom-ex-group').value;
+
+      if (!name) return window.showToast('Enter an exercise name.', true);
+      if (window.exerciseDb.some(ex => ex.name.toLowerCase() === name.toLowerCase())) {
+        return window.showToast('That exercise already exists.', true);
+      }
+
+      window.exerciseDb.push({ name, group });
+      saveLocal();
+      refreshAllUI();
+
+      nameInput.value = '';
+      window.showToast('Exercise added to database.');
+    }
+
+    function renderExerciseDatabase() {
+      const filter = document.getElementById('filter-muscle-group').value;
+      const list = document.getElementById('exercise-db-list');
+
+      const filtered = filter === 'All' ? window.exerciseDb : window.exerciseDb.filter(ex => ex.group === filter);
+
+      if (filtered.length === 0) {
+        list.innerHTML = `<div class="empty-state">No exercises in this group yet.</div>`;
+        return;
+      }
+
+      list.innerHTML = filtered.map(ex => `
+        <div class="exercise-row">
+          <span class="row-name"><strong>${escapeHtml(ex.name)}</strong></span>
+          <span class="row-actions">
+            <span class="tag">${escapeHtml(ex.group)}</span>
+            <button class="btn-icon" onclick="openExerciseMenu(this, '${jsAttr(ex.name)}')" aria-label="Options for ${escapeHtml(ex.name)}">⋮</button>
+          </span>
+        </div>
+      `).join('');
+    }
+
+    function openExerciseMenu(anchorEl, name) {
+      openActionMenu(anchorEl, [
+        { label: 'Edit', onClick: () => openExerciseEditModal(name) },
+        { label: 'Delete', danger: true, onClick: () => confirmDeleteExercise(name) }
+      ]);
+    }
+
+    function openExerciseEditModal(name) {
+      const ex = window.exerciseDb.find(e => e.name === name);
+      if (!ex) return;
+      activeEditingExerciseName = name;
+      document.getElementById('exercise-modal-name').value = ex.name;
+      document.getElementById('exercise-modal-group').value = ex.group;
+      document.getElementById('exercise-modal').style.display = 'flex';
+    }
+
+    function closeExerciseModal() {
+      document.getElementById('exercise-modal').style.display = 'none';
+    }
+
+    function saveExerciseModalChanges() {
+      const newName = document.getElementById('exercise-modal-name').value.trim();
+      const newGroup = document.getElementById('exercise-modal-group').value;
+      const oldName = activeEditingExerciseName;
+      if (!newName) return window.showToast('Enter an exercise name.', true);
+
+      const dupe = window.exerciseDb.find(ex => ex.name.toLowerCase() === newName.toLowerCase() && ex.name !== oldName);
+      if (dupe) return window.showToast('An exercise with that name already exists.', true);
+
+      const exEntry = window.exerciseDb.find(ex => ex.name === oldName);
+      if (!exEntry) return closeExerciseModal();
+
+      exEntry.name = newName;
+      exEntry.group = newGroup;
+
+      if (newName !== oldName) {
+        Object.keys(window.programs).forEach(p => {
+          window.programs[p] = window.programs[p].map(n => n === oldName ? newName : n);
+        });
+        if (window.historyData[oldName]) {
+          window.historyData[newName] = (window.historyData[newName] || []).concat(window.historyData[oldName]);
+          delete window.historyData[oldName];
+        }
+      }
+
+      saveLocal();
+      refreshAllUI();
+      closeExerciseModal();
+      window.showToast('Exercise updated.');
+    }
+
+    function deleteExerciseFromModal() {
+      confirmDeleteExercise(activeEditingExerciseName, closeExerciseModal);
+    }
+
+    function confirmDeleteExercise(name, afterClose) {
+      showConfirm(`Delete "${name}"? It will be removed from your database and from any programs that use it.`, () => {
+        window.exerciseDb = window.exerciseDb.filter(ex => ex.name !== name);
+        Object.keys(window.programs).forEach(p => {
+          window.programs[p] = window.programs[p].filter(n => n !== name);
+        });
+        saveLocal();
+        refreshAllUI();
+        if (afterClose) afterClose();
+        window.showToast('Exercise deleted.');
+      });
+    }
+
+    function addExerciseToProgramBuilder() {
+      const picker = document.getElementById('program-exercise-picker');
+      const exName = picker.value;
+      if (!exName) return;
+      if (tempBuilderExercises.includes(exName)) return window.showToast('Already added to this program.', true);
+
+      tempBuilderExercises.push(exName);
+      renderBuilderList();
+    }
+
+    function renderBuilderList() {
+      const list = document.getElementById('selected-exercises-list');
+      if (tempBuilderExercises.length === 0) {
+        list.innerHTML = `<div class="empty-state">No exercises added yet.</div>`;
+        return;
+      }
+      list.innerHTML = tempBuilderExercises.map((ex, idx) => `
+        <div class="chip-row">
+          <span>${idx + 1}. ${escapeHtml(ex)}</span>
+          <button class="btn-icon" style="color:var(--danger)" onclick="removeBuilderEx(${idx})" aria-label="Remove ${escapeHtml(ex)}">✕</button>
+        </div>
+      `).join('');
+    }
+
+    function removeBuilderEx(idx) {
+      tempBuilderExercises.splice(idx, 1);
+      renderBuilderList();
+    }
+
+    function saveCustomProgram() {
+      const nameInput = document.getElementById('new-program-name');
+      const name = nameInput.value.trim();
+      if (!name) return window.showToast('Enter a program name.', true);
+      if (tempBuilderExercises.length === 0) return window.showToast('Add at least one exercise.', true);
+      if (window.programs[name]) return window.showToast('A program with that name already exists.', true);
+
+      window.programs[name] = [...tempBuilderExercises];
+      saveLocal();
+      refreshAllUI();
+
+      nameInput.value = '';
+      tempBuilderExercises = [];
+      renderBuilderList();
+      window.showToast(`"${name}" saved.`);
+    }
+
+    function renderManageProgramsList() {
+      const list = document.getElementById('programs-list-manage');
+      const programKeys = Object.keys(window.programs);
+
+      if (programKeys.length === 0) {
+        list.innerHTML = `<div class="empty-state">No programs yet — build one below or load a preset split.</div>`;
+        return;
+      }
+
+      list.innerHTML = programKeys.map(pName => `
+        <div class="program-row">
+          <span><strong>${escapeHtml(pName)}</strong> <span class="count">(${window.programs[pName].length} exercises)</span></span>
+          <button class="btn-icon" onclick="openProgramMenu(this, '${jsAttr(pName)}')" aria-label="Options for ${escapeHtml(pName)}">⋮</button>
+        </div>
+      `).join('');
+    }
+
+    function openProgramMenu(anchorEl, name) {
+      openActionMenu(anchorEl, [
+        { label: 'Edit', onClick: () => openProgramModalByName(name) },
+        { label: 'Delete', danger: true, onClick: () => confirmDeleteProgram(name) }
+      ]);
+    }
+
+    function openProgramOptionsMenu(anchorEl) {
+      const selected = document.getElementById('select-active-program').value;
+      if (!selected) return;
+      openProgramMenu(anchorEl, selected);
+    }
+
+    function confirmDeleteProgram(name, afterClose) {
+      showConfirm(`Delete "${name}"? This can't be undone.`, () => {
+        delete window.programs[name];
+        saveLocal();
+        refreshAllUI();
+        if (document.getElementById('select-active-program').value === '' ) {
+          document.getElementById('active-workout-container').innerHTML = '';
+        }
+        if (afterClose) afterClose();
+        window.showToast('Program deleted.');
+      });
+    }
+
+    function loadPreset(type) {
+      const presets = {
+        ppl: {
+          'Push Day': ['Barbell Bench Press', 'Incline Dumbbell Press', 'Overhead Dumbbell Press', 'Dumbbell Lateral Raise', 'Tricep Rope Pushdown'],
+          'Pull Day': ['Barbell Bent Over Row', 'Lat Pulldown (Wide Grip)', 'Cable Pullover', 'Barbell Bicep Curl'],
+          'Legs Day': ['Barbell Back Squat', 'Romanian Deadlift', 'Leg Extension', 'Hanging Leg Raise']
+        },
+        upperlower: {
+          'Upper Body': ['Barbell Bench Press', 'Barbell Bent Over Row', 'Incline Dumbbell Press', 'Lat Pulldown (Wide Grip)', 'Dumbbell Lateral Raise'],
+          'Lower Body': ['Barbell Back Squat', 'Romanian Deadlift', 'Leg Press', 'Seated Leg Curl', 'Standing Calf Raise']
+        },
+        brosplit: {
+          'Chest': ['Barbell Bench Press', 'Incline Dumbbell Press', 'Low-to-High Cable Fly'],
+          'Back': ['Barbell Bent Over Row', 'Lat Pulldown (Wide Grip)', 'Cable Pullover'],
+          'Shoulders': ['Overhead Dumbbell Press', 'Dumbbell Lateral Raise', 'Face Pull'],
+          'Legs': ['Barbell Back Squat', 'Romanian Deadlift', 'Leg Extension'],
+          'Arms': ['Barbell Bicep Curl', 'Tricep Rope Pushdown', 'Hammer Curl']
+        },
+        fullbody: {
+          'Full Body A': ['Barbell Back Squat', 'Barbell Bench Press', 'Barbell Bent Over Row', 'Dumbbell Lateral Raise'],
+          'Full Body B': ['Romanian Deadlift', 'Incline Dumbbell Press', 'Lat Pulldown (Wide Grip)', 'Barbell Bicep Curl']
+        }
+      };
+
+      const chosen = presets[type];
+      if (!chosen) return;
+      Object.assign(window.programs, chosen);
+
+      saveLocal();
+      refreshAllUI();
+      window.showToast('Preset split loaded into your programs.');
+    }
+
+    function populateProgramSelect() {
+      const select = document.getElementById('select-active-program');
+      const previousValue = select.value;
+      select.innerHTML = '<option value="">-- Select Workout --</option>';
+      Object.keys(window.programs).forEach(p => {
+        select.innerHTML += `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`;
+      });
+
+      if (previousValue && window.programs[previousValue]) {
+        select.value = previousValue;
+        document.getElementById('workout-program-options-btn').style.display = 'inline-block';
+      } else {
+        select.value = '';
+        document.getElementById('workout-program-options-btn').style.display = 'none';
+      }
+    }
+
+    function openProgramModalByName(pName) {
+      if (!window.programs[pName]) return;
+      activeEditingProgramName = pName;
+      tempModalExercises = [...window.programs[pName]];
+
+      document.getElementById('modal-program-title').innerText = `Edit ${pName}`;
+      document.getElementById('modal-edit-title').value = pName;
+      renderModalExercisesList();
+
+      document.getElementById('program-modal').style.display = 'flex';
+    }
+
+    function renderModalExercisesList() {
+      const container = document.getElementById('modal-exercises-list');
+      if (tempModalExercises.length === 0) {
+        container.innerHTML = `<div class="empty-state">No exercises in this program.</div>`;
+        return;
+      }
+      container.innerHTML = tempModalExercises.map((ex, idx) => `
+        <div class="chip-row">
+          <span>${idx + 1}. ${escapeHtml(ex)}</span>
+          <button class="btn-icon" style="color:var(--danger)" onclick="removeModalExercise(${idx})" aria-label="Remove ${escapeHtml(ex)}">✕</button>
+        </div>
+      `).join('');
+    }
+
+    function removeModalExercise(idx) {
+      tempModalExercises.splice(idx, 1);
+      renderModalExercisesList();
+    }
+
+    function addExerciseInModal() {
+      const picker = document.getElementById('modal-add-ex-picker');
+      const exName = picker.value;
+      if (!exName) return;
+      if (tempModalExercises.includes(exName)) return window.showToast('Already in this program.', true);
+
+      tempModalExercises.push(exName);
+      renderModalExercisesList();
+    }
+
+    function saveProgramModalChanges() {
+      const newTitle = document.getElementById('modal-edit-title').value.trim();
+      if (!newTitle) return window.showToast('Enter a program title.', true);
+      if (tempModalExercises.length === 0) return window.showToast('A program needs at least one exercise.', true);
+      if (newTitle !== activeEditingProgramName && window.programs[newTitle]) {
+        return window.showToast('A program with that name already exists.', true);
+      }
+
+      if (newTitle !== activeEditingProgramName) {
+        delete window.programs[activeEditingProgramName];
+      }
+
+      window.programs[newTitle] = [...tempModalExercises];
+      saveLocal();
+      refreshAllUI();
+
+      closeProgramModal();
+      const select = document.getElementById('select-active-program');
+      select.value = newTitle;
+      startWorkoutSession();
+      window.showToast('Program updated.');
+    }
+
+    function deleteProgramFromModal() {
+      confirmDeleteProgram(activeEditingProgramName, closeProgramModal);
+    }
+
+    function closeProgramModal() {
+      document.getElementById('program-modal').style.display = 'none';
+    }
+
+    function startWorkoutSession() {
+      const selected = document.getElementById('select-active-program').value;
+      const container = document.getElementById('active-workout-container');
+      const optBtn = document.getElementById('workout-program-options-btn');
+
+      container.innerHTML = '';
+
+      if (!selected || !window.programs[selected]) {
+        optBtn.style.display = 'none';
+        return;
+      }
+
+      optBtn.style.display = 'inline-block';
+
+      window.programs[selected].forEach((exName, idx) => {
+        container.innerHTML += `
+          <div class="card">
+            <h3>${escapeHtml(exName)}</h3>
+            <div id="sets-box-${idx}">
+              <div class="set-row">
+                <span>Set 1</span>
+                <input type="number" inputmode="decimal" placeholder="kg" class="w-${idx}">
+                <input type="number" inputmode="numeric" placeholder="reps" class="r-${idx}">
+              </div>
+            </div>
+            <button class="btn-add-set" onclick="addSetRowToSession(${idx})">+ Add Set</button>
+          </div>
+        `;
+      });
+
+      container.innerHTML += `<button class="btn-primary" onclick="finishWorkoutSession()">Complete & Save Session</button>`;
+    }
+
+    function addSetRowToSession(exIdx) {
+      const box = document.getElementById(`sets-box-${exIdx}`);
+      const setNum = box.children.length + 1;
+      box.insertAdjacentHTML('beforeend', `
+        <div class="set-row">
+          <span>Set ${setNum}</span>
+          <input type="number" inputmode="decimal" placeholder="kg" class="w-${exIdx}">
+          <input type="number" inputmode="numeric" placeholder="reps" class="r-${exIdx}">
+        </div>
+      `);
+    }
+
+    function finishWorkoutSession() {
+      const selectedProgram = document.getElementById('select-active-program').value;
+      if (!selectedProgram) return;
+
+      const dateStr = new Date().toISOString().split('T')[0];
+      let loggedAny = false;
+
+      window.programs[selectedProgram].forEach((exName, idx) => {
+        const weights = document.querySelectorAll(`.w-${idx}`);
+        const reps = document.querySelectorAll(`.r-${idx}`);
+
+        const setsData = [];
+        weights.forEach((wIn, i) => {
+          const w = parseFloat(wIn.value);
+          const r = parseInt(reps[i].value, 10);
+          if (!isNaN(w) && !isNaN(r)) setsData.push({ weight: w, reps: r });
+        });
+
+        if (setsData.length > 0) {
+          if (!window.historyData[exName]) window.historyData[exName] = [];
+          window.historyData[exName].push({ date: dateStr, sets: setsData });
+          loggedAny = true;
+        }
+      });
+
+      if (!loggedAny) return window.showToast('Log at least one set before saving.', true);
+
+      saveLocal();
+      window.showToast('Workout session saved.');
+      startWorkoutSession();
+    }
+
+    function loadAiSettingsIntoForm() {
+      document.getElementById('ai-endpoint-input').value = localStorage.getItem('ai_endpoint') || '';
+    }
+
+    function saveAiSettings() {
+      const endpoint = document.getElementById('ai-endpoint-input').value.trim();
+      if (!endpoint) return window.showToast('Enter an API endpoint URL.', true);
+
+      localStorage.setItem('ai_endpoint', endpoint);
+      window.showToast('AI settings saved.');
+    }
+
+    async function runAiAnalysis() {
+      const endpoint = localStorage.getItem('ai_endpoint');
+
+      if (!endpoint) return window.showToast('Add your API Endpoint URL in the settings above first.', true);
+      if (Object.keys(window.historyData).length === 0) return window.showToast('Log a few workouts first so there is data to analyze.', true);
+
+      const card = document.getElementById('ai-response-card');
+      const textEl = document.getElementById('ai-response-text');
+      card.style.display = 'block';
+      textEl.innerText = 'Analyzing your workouts and progress...';
+
+      const prompt = `You are an elite strength & hypertrophy coach. Analyze this workout history data:
+${JSON.stringify(window.historyData, null, 2)}
+
+Provide recommendations in English on:
+1. Progress or plateau detection per exercise.
+2. Fatigue management (deload or rest week recommendations).
+3. Exercise substitutions for stalled movements.`;
+
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: prompt, historyData: window.historyData })
+        });
+
+        if (!res.ok) throw new Error(`API responded with status ${res.status}`);
+        
+        const data = await res.json();
+        const text = data?.text || data?.response || data?.choices?.[0]?.message?.content || (typeof data === 'string' ? data : null);
+
+        textEl.innerText = text || JSON.stringify(data, null, 2) || 'No response received from the AI coach.';
+      } catch (e) {
+        textEl.innerText = 'Error connecting to the AI coach: ' + e.message;
+      }
+    }
+
+    function populateAnalyticsPicker() {
+      const picker = document.getElementById('analytics-picker');
+      picker.innerHTML = '';
+      const exercises = Object.keys(window.historyData);
+
+      if (exercises.length === 0) {
+        picker.innerHTML = '<option value="">No workout history recorded yet</option>';
+        if (currentChart) { currentChart.destroy(); currentChart = null; }
+        return;
+      }
+
+      exercises.forEach(ex => picker.innerHTML += `<option value="${escapeHtml(ex)}">${escapeHtml(ex)}</option>`);
+      renderAnalyticsChart();
+    }
+
+    function renderAnalyticsChart() {
+      const exName = document.getElementById('analytics-picker').value;
+      const ctx = document.getElementById('progressChart').getContext('2d');
+
+      if (currentChart) { currentChart.destroy(); currentChart = null; }
+      if (!exName || !window.historyData[exName]) return;
+
+      const labels = window.historyData[exName].map(e => e.date);
+      const dataPoints = window.historyData[exName].map(e => Math.max(...e.sets.map(s => s.weight)));
+
+      currentChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Max Weight (kg)',
+            data: dataPoints,
+            borderColor: '#e8a33d',
+            backgroundColor: 'rgba(232, 163, 61, 0.18)',
+            pointBackgroundColor: '#e8a33d',
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#f2efe9' } } },
+          scales: {
+            y: { grid: { color: '#2f333d' }, ticks: { color: '#9aa0ab' } },
+            x: { grid: { color: '#2f333d' }, ticks: { color: '#9aa0ab' } }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
