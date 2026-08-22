@@ -1,13 +1,20 @@
 const CACHE_NAME = '10fit-v2';
 const OFFLINE_URL = './index.html';
-const ASSETS_TO_CACHE = [
+// Local assets the app cannot work without. Cached atomically — if any of these
+// fail the install should fail, because a half-cached shell is worse than none.
+const CORE_ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
   './icon-512-maskable.png',
-  './apple-touch-icon.png',
+  './apple-touch-icon.png'
+];
+
+// Third-party assets. Cached best-effort: a CDN hiccup, an offline first visit,
+// or a blocked host must not stop the service worker from installing.
+const OPTIONAL_ASSETS = [
   'https://cdn.jsdelivr.net/npm/chart.js',
   'https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap'
 ];
@@ -15,7 +22,14 @@ const ASSETS_TO_CACHE = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(ASSETS_TO_CACHE))
+      .then(async (cache) => {
+        await cache.addAll(CORE_ASSETS);
+        await Promise.allSettled(
+          OPTIONAL_ASSETS.map((url) =>
+            cache.add(new Request(url, { mode: 'no-cors' }))
+          )
+        );
+      })
       .then(() => self.skipWaiting())
   );
 });
