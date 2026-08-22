@@ -2,14 +2,14 @@
 <html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <!-- השורה הקריטית הבאה אומרת לאייפון לאפשר הימתחות לאזורים המוגנים -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
   <meta name="theme-color" content="#14161b">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="10Fit">
 
-  <!-- PWA Manifest Link -->
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
 
@@ -52,8 +52,6 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      adding-top: env(safe-area-inset-top);
-}
     }
 
     :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -62,10 +60,13 @@
       * { transition: none !important; animation: none !important; }
     }
 
+    /* תיקון ה-Header עבור Dynamic Island וה-Status Bar באייפון */
     header {
       background: var(--bg-elevated);
-      adding: calc(14px + env(safe-area-inset-top)) 16px 14px 16px;
-      padding: 14px 16px;
+      padding-top: calc(14px + env(safe-area-inset-top, 0px));
+      padding-bottom: 14px;
+      padding-left: 16px;
+      padding-right: 16px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -140,7 +141,7 @@
       transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex;
       flex-direction: column;
-      padding: 18px 14px;
+      padding: calc(18px + env(safe-area-inset-top, 0px)) 14px 18px 14px;
       border-right: 1px solid var(--border);
       will-change: transform;
     }
@@ -397,7 +398,6 @@
 </head>
 <body>
 
-  <!-- Top Navigation Header -->
   <header>
     <button class="icon-btn" onclick="toggleSidebar()" aria-label="Open menu" aria-expanded="false" aria-controls="sidebar">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -409,7 +409,6 @@
     <div id="auth-status-indicator"><span class="dot"></span><span id="auth-status-text">Local</span></div>
   </header>
 
-  <!-- Left Sidebar Drawer -->
   <div id="sidebar-overlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
   <aside id="sidebar" class="sidebar" aria-hidden="true">
     <div class="sidebar-header">
@@ -446,7 +445,6 @@
     </ul>
   </aside>
 
-  <!-- Main Body Content -->
   <main>
     <section id="view-workout" class="view-section active">
       <div class="card">
@@ -579,7 +577,6 @@
     </section>
   </main>
 
-  <!-- Modals -->
   <div id="program-modal" class="modal-overlay" onclick="if(event.target===this) closeProgramModal()">
     <div class="modal-content">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
@@ -649,7 +646,6 @@
 
   <div id="toast" role="status" aria-live="polite"></div>
 
-  <!-- Service Worker Registration -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -660,7 +656,6 @@
     }
   </script>
 
-  <!-- Firebase Integration -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -751,7 +746,6 @@
     };
   </script>
 
-  <!-- Application Logic -->
   <script>
     const defaultExercises = [
       { name: "Barbell Bench Press", group: "Chest" },
