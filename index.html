@@ -11,7 +11,9 @@
   <meta name="apple-mobile-web-app-title" content="10Fit">
 
   <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 
   <title>10Fit - Pro Gym Companion</title>
 
@@ -482,6 +484,17 @@
         <h3>Build Custom Program</h3>
         <input type="text" id="new-program-name" placeholder="Program Title (e.g. Chest & Arms)">
 
+        <label>Muscle Group</label>
+        <select id="program-muscle-group-picker" onchange="populateExercisePickers()">
+          <option value="All">All Muscle Groups</option>
+          <option value="Chest">Chest</option>
+          <option value="Back">Back</option>
+          <option value="Legs">Legs</option>
+          <option value="Shoulders">Shoulders</option>
+          <option value="Arms">Arms</option>
+          <option value="Core">Core</option>
+        </select>
+
         <label>Add Exercise from Database</label>
         <div style="display: flex; gap: 8px;">
           <select id="program-exercise-picker"></select>
@@ -534,8 +547,14 @@
         <label>API Endpoint URL</label>
         <input type="text" id="ai-endpoint-input" placeholder="https://...">
 
-        <button class="btn-secondary" style="margin-bottom:0;" onclick="saveAiSettings()">Save AI Settings</button>
-        <p class="hint" style="margin-top:10px; margin-bottom:0;">Your endpoint is stored only on this device.</p>
+        <label>API Key</label>
+        <input type="password" id="ai-apikey-input" placeholder="Paste your AI provider API key here">
+
+        <div style="display:flex; gap:8px;">
+          <button class="btn-secondary" style="margin-bottom:0;" onclick="saveAiSettings()">Save AI Settings</button>
+          <button class="btn-teal" style="margin-bottom:0;" onclick="testAiConnection()">Test Connection</button>
+        </div>
+        <p class="hint" style="margin-top:10px; margin-bottom:0;">Your endpoint and key are stored only on this device, never sent anywhere except the endpoint you configure.</p>
       </div>
 
       <div class="card">
@@ -591,6 +610,17 @@
 
       <label>Exercises in Program</label>
       <div id="modal-exercises-list" style="margin-bottom: 12px;"></div>
+
+      <label>Muscle Group</label>
+      <select id="modal-muscle-group-picker" onchange="populateExercisePickers()">
+        <option value="All">All Muscle Groups</option>
+        <option value="Chest">Chest</option>
+        <option value="Back">Back</option>
+        <option value="Legs">Legs</option>
+        <option value="Shoulders">Shoulders</option>
+        <option value="Arms">Arms</option>
+        <option value="Core">Core</option>
+      </select>
 
       <label>Add Exercise to Program</label>
       <div style="display: flex; gap: 8px; margin-bottom: 16px;">
@@ -650,7 +680,18 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
-          .then(reg => console.log('Service Worker registered:', reg.scope))
+          .then(reg => {
+            console.log('Service Worker registered:', reg.scope);
+            reg.addEventListener('updatefound', () => {
+              const newWorker = reg.installing;
+              if (!newWorker) return;
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  window.showToast && window.showToast('A new version of 10Fit is ready — refresh to update.');
+                }
+              });
+            });
+          })
           .catch(err => console.error('Service Worker registration failed:', err));
       });
     }
@@ -1000,16 +1041,30 @@
     }
 
     function populateExercisePickers() {
-      const picker = document.getElementById('program-exercise-picker');
-      const modalPicker = document.getElementById('modal-add-ex-picker');
-      picker.innerHTML = '';
-      modalPicker.innerHTML = '';
+      populatePickerForGroup('program-exercise-picker', 'program-muscle-group-picker');
+      populatePickerForGroup('modal-add-ex-picker', 'modal-muscle-group-picker');
+    }
 
-      window.exerciseDb.forEach(ex => {
-        const opt = `<option value="${escapeHtml(ex.name)}">${escapeHtml(ex.name)} (${escapeHtml(ex.group)})</option>`;
-        picker.innerHTML += opt;
-        modalPicker.innerHTML += opt;
-      });
+    function populatePickerForGroup(pickerId, groupSelectId) {
+      const picker = document.getElementById(pickerId);
+      if (!picker) return;
+      const groupSelect = document.getElementById(groupSelectId);
+      const group = groupSelect ? groupSelect.value : 'All';
+      const previousValue = picker.value;
+
+      const filtered = group === 'All' ? window.exerciseDb : window.exerciseDb.filter(ex => ex.group === group);
+
+      if (filtered.length === 0) {
+        picker.innerHTML = '<option value="">No exercises in this group yet</option>';
+        return;
+      }
+
+      picker.innerHTML = filtered.map(ex => {
+        const label = group === 'All' ? `${ex.name} (${ex.group})` : ex.name;
+        return `<option value="${escapeHtml(ex.name)}">${escapeHtml(label)}</option>`;
+      }).join('');
+
+      if (filtered.some(ex => ex.name === previousValue)) picker.value = previousValue;
     }
 
     function addNewCustomExercise() {
@@ -1410,14 +1465,54 @@
 
     function loadAiSettingsIntoForm() {
       document.getElementById('ai-endpoint-input').value = localStorage.getItem('ai_endpoint') || '';
+      document.getElementById('ai-apikey-input').value = localStorage.getItem('ai_apikey') || '';
     }
 
     function saveAiSettings() {
       const endpoint = document.getElementById('ai-endpoint-input').value.trim();
+      const apiKey = document.getElementById('ai-apikey-input').value.trim();
       if (!endpoint) return window.showToast('Enter an API endpoint URL.', true);
 
       localStorage.setItem('ai_endpoint', endpoint);
+      localStorage.setItem('ai_apikey', apiKey);
       window.showToast('AI settings saved.');
+    }
+
+    function buildAiHeaders() {
+      const apiKey = localStorage.getItem('ai_apikey');
+      const headers = { 'Content-Type': 'application/json' };
+      if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+      return headers;
+    }
+
+    async function testAiConnection() {
+      const endpoint = document.getElementById('ai-endpoint-input').value.trim();
+      const apiKey = document.getElementById('ai-apikey-input').value.trim();
+
+      if (!endpoint) return window.showToast('Enter an API endpoint URL first.', true);
+
+      localStorage.setItem('ai_endpoint', endpoint);
+      localStorage.setItem('ai_apikey', apiKey);
+
+      window.showToast('Testing connection...');
+
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: buildAiHeaders(),
+          body: JSON.stringify({ prompt: 'ping', test: true })
+        });
+
+        if (res.ok) {
+          window.showToast('Connected successfully — your API key works!');
+        } else if (res.status === 401 || res.status === 403) {
+          window.showToast(`Connection reached the server, but the API key was rejected (status ${res.status}).`, true);
+        } else {
+          window.showToast(`Connected, but the API responded with status ${res.status}.`, true);
+        }
+      } catch (e) {
+        window.showToast('Could not reach the AI endpoint: ' + e.message, true);
+      }
     }
 
     async function runAiAnalysis() {
@@ -1442,12 +1537,12 @@ Provide recommendations in English on:
       try {
         const res = await fetch(endpoint, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: buildAiHeaders(),
           body: JSON.stringify({ prompt: prompt, historyData: window.historyData })
         });
 
         if (!res.ok) throw new Error(`API responded with status ${res.status}`);
-        
+
         const data = await res.json();
         const text = data?.text || data?.response || data?.choices?.[0]?.message?.content || (typeof data === 'string' ? data : null);
 
