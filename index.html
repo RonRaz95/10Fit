@@ -547,19 +547,36 @@
     <section id="view-ai" class="view-section">
       <div class="card">
         <h3>AI Coach Settings</h3>
-        <p class="hint">Connect your AI endpoint to analyze your training data.</p>
+        <p class="hint">Connect an AI provider to analyze your training data.</p>
 
-        <label>API Endpoint URL</label>
-        <input type="text" id="ai-endpoint-input" placeholder="https://...">
+        <label>Provider</label>
+        <select id="ai-provider-select" onchange="onAiProviderChange()">
+          <option value="gemini">Google Gemini</option>
+          <option value="custom">Custom endpoint</option>
+        </select>
 
-        <label>API Key</label>
-        <input type="password" id="ai-apikey-input" placeholder="Paste your AI provider API key here">
+        <label id="ai-apikey-label">Google AI API Key</label>
+        <input type="password" id="ai-apikey-input" placeholder="Paste your API key">
+        <p class="hint" id="ai-key-hint">Get a free key at aistudio.google.com/apikey</p>
+
+        <div id="ai-model-field">
+          <label>Model</label>
+          <select id="ai-model-select">
+            <option value="">Run Test Connection to load models</option>
+          </select>
+        </div>
+
+        <div id="ai-endpoint-field" style="display:none;">
+          <label>API Endpoint URL</label>
+          <input type="text" id="ai-endpoint-input" placeholder="https://...">
+          <p class="hint">Receives a POST with {prompt, historyData}. The key above, if set, is sent as a Bearer token.</p>
+        </div>
 
         <div style="display:flex; gap:8px;">
           <button class="btn-secondary" style="margin-bottom:0;" onclick="saveAiSettings()">Save AI Settings</button>
           <button class="btn-teal" style="margin-bottom:0;" onclick="testAiConnection()">Test Connection</button>
         </div>
-        <p class="hint" style="margin-top:10px; margin-bottom:0;">Your endpoint and key are stored only on this device, never sent anywhere except the endpoint you configure.</p>
+        <p class="hint" style="margin-top:10px; margin-bottom:0;">Your key is stored only on this device and is sent straight to the provider — it never passes through any server of ours. Anyone with access to this device can read it.</p>
       </div>
 
       <div class="card">
@@ -1468,50 +1485,123 @@
       startWorkoutSession();
     }
 
+    const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta';
+
+    function getAiProvider() {
+      return localStorage.getItem('ai_provider') || 'gemini';
+    }
+
+    function onAiProviderChange() {
+      const provider = document.getElementById('ai-provider-select').value;
+      const isGemini = provider === 'gemini';
+      document.getElementById('ai-model-field').style.display = isGemini ? '' : 'none';
+      document.getElementById('ai-endpoint-field').style.display = isGemini ? 'none' : '';
+      document.getElementById('ai-apikey-label').textContent = isGemini ? 'Google AI API Key' : 'API Key (optional)';
+      document.getElementById('ai-key-hint').style.display = isGemini ? '' : 'none';
+    }
+
     function loadAiSettingsIntoForm() {
+      document.getElementById('ai-provider-select').value = getAiProvider();
       document.getElementById('ai-endpoint-input').value = localStorage.getItem('ai_endpoint') || '';
       document.getElementById('ai-apikey-input').value = localStorage.getItem('ai_apikey') || '';
+
+      // Show the saved model right away; the full list is fetched on Test Connection.
+      const savedModel = localStorage.getItem('ai_model');
+      if (savedModel) {
+        const sel = document.getElementById('ai-model-select');
+        sel.innerHTML = `<option value="${escapeHtml(savedModel)}">${escapeHtml(savedModel)}</option>`;
+        sel.value = savedModel;
+      }
+
+      onAiProviderChange();
     }
 
     function saveAiSettings() {
-      const endpoint = document.getElementById('ai-endpoint-input').value.trim();
+      const provider = document.getElementById('ai-provider-select').value;
       const apiKey = document.getElementById('ai-apikey-input').value.trim();
-      if (!endpoint) return window.showToast('Enter an API endpoint URL.', true);
+      const endpoint = document.getElementById('ai-endpoint-input').value.trim();
+      const model = document.getElementById('ai-model-select').value;
 
-      localStorage.setItem('ai_endpoint', endpoint);
+      if (provider === 'gemini' && !apiKey) return window.showToast('Enter your Google AI API key.', true);
+      if (provider === 'custom' && !endpoint) return window.showToast('Enter an API endpoint URL.', true);
+
+      localStorage.setItem('ai_provider', provider);
       localStorage.setItem('ai_apikey', apiKey);
+      localStorage.setItem('ai_endpoint', endpoint);
+      if (model) localStorage.setItem('ai_model', model);
+
       window.showToast('AI settings saved.');
     }
 
-    function buildAiHeaders() {
-      const apiKey = localStorage.getItem('ai_apikey');
-      const headers = { 'Content-Type': 'application/json' };
-      if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
-      return headers;
+    async function testAiConnection() {
+      const provider = document.getElementById('ai-provider-select').value;
+      localStorage.setItem('ai_provider', provider);
+      if (provider === 'gemini') return testGeminiConnection();
+      return testCustomConnection();
     }
 
-    async function testAiConnection() {
+    // Model IDs are never hardcoded — Google ships new ones often, so the list is
+    // pulled live with the user's own key and only generateContent models are kept.
+    async function testGeminiConnection() {
+      const apiKey = document.getElementById('ai-apikey-input').value.trim();
+      if (!apiKey) return window.showToast('Enter your Google AI API key first.', true);
+
+      window.showToast('Testing connection...');
+
+      try {
+        const res = await fetch(`${GEMINI_BASE}/models`, { headers: { 'x-goog-api-key': apiKey } });
+
+        if (res.status === 400 || res.status === 401 || res.status === 403) {
+          return window.showToast(`Google rejected the API key (status ${res.status}).`, true);
+        }
+        if (!res.ok) return window.showToast(`Google responded with status ${res.status}.`, true);
+
+        const data = await res.json();
+        const models = (data.models || [])
+          .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
+          .map(m => String(m.name || '').replace(/^models\//, ''))
+          .filter(Boolean);
+
+        if (models.length === 0) {
+          return window.showToast('Key accepted, but no usable models were returned.', true);
+        }
+
+        const sel = document.getElementById('ai-model-select');
+        sel.innerHTML = models.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+
+        const previous = localStorage.getItem('ai_model');
+        sel.value = models.includes(previous)
+          ? previous
+          : (models.find(m => m.includes('flash')) || models[0]);
+
+        localStorage.setItem('ai_apikey', apiKey);
+        localStorage.setItem('ai_model', sel.value);
+        window.showToast(`Connected! ${models.length} models available — using ${sel.value}.`);
+      } catch (e) {
+        window.showToast('Could not reach Google: ' + e.message, true);
+      }
+    }
+
+    async function testCustomConnection() {
       const endpoint = document.getElementById('ai-endpoint-input').value.trim();
       const apiKey = document.getElementById('ai-apikey-input').value.trim();
-
       if (!endpoint) return window.showToast('Enter an API endpoint URL first.', true);
 
       localStorage.setItem('ai_endpoint', endpoint);
       localStorage.setItem('ai_apikey', apiKey);
-
       window.showToast('Testing connection...');
 
       try {
         const res = await fetch(endpoint, {
           method: 'POST',
-          headers: buildAiHeaders(),
+          headers: buildCustomHeaders(),
           body: JSON.stringify({ prompt: 'ping', test: true })
         });
 
         if (res.ok) {
-          window.showToast('Connected successfully — your API key works!');
+          window.showToast('Connected successfully — your endpoint works!');
         } else if (res.status === 401 || res.status === 403) {
-          window.showToast(`Connection reached the server, but the API key was rejected (status ${res.status}).`, true);
+          window.showToast(`Reached the server, but the API key was rejected (status ${res.status}).`, true);
         } else {
           window.showToast(`Connected, but the API responded with status ${res.status}.`, true);
         }
@@ -1520,10 +1610,60 @@
       }
     }
 
-    async function runAiAnalysis() {
-      const endpoint = localStorage.getItem('ai_endpoint');
+    function buildCustomHeaders() {
+      const apiKey = localStorage.getItem('ai_apikey');
+      const headers = { 'Content-Type': 'application/json' };
+      if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+      return headers;
+    }
 
-      if (!endpoint) return window.showToast('Add your API Endpoint URL in the settings above first.', true);
+    async function callGemini(prompt) {
+      const apiKey = localStorage.getItem('ai_apikey');
+      const model = localStorage.getItem('ai_model');
+      if (!apiKey) throw new Error('Add your Google AI API key in the settings above.');
+      if (!model) throw new Error('Run Test Connection first so a model can be selected.');
+
+      const res = await fetch(`${GEMINI_BASE}/models/${encodeURIComponent(model)}:generateContent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      });
+
+      if (!res.ok) {
+        const detail = await res.text().catch(() => '');
+        throw new Error(`Google responded with status ${res.status}. ${detail.slice(0, 200)}`);
+      }
+
+      const data = await res.json();
+      const parts = data?.candidates?.[0]?.content?.parts;
+      const text = Array.isArray(parts) ? parts.map(p => p.text).filter(Boolean).join('\n') : null;
+
+      if (!text) {
+        const blocked = data?.promptFeedback?.blockReason || data?.candidates?.[0]?.finishReason;
+        throw new Error(blocked ? `Gemini returned no text (${blocked}).` : 'Gemini returned no text.');
+      }
+      return text;
+    }
+
+    async function callCustomEndpoint(prompt) {
+      const endpoint = localStorage.getItem('ai_endpoint');
+      if (!endpoint) throw new Error('Add your API Endpoint URL in the settings above.');
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: buildCustomHeaders(),
+        body: JSON.stringify({ prompt: prompt, historyData: window.historyData })
+      });
+
+      if (!res.ok) throw new Error(`API responded with status ${res.status}`);
+
+      const data = await res.json();
+      return data?.text || data?.response || data?.choices?.[0]?.message?.content
+        || (typeof data === 'string' ? data : null)
+        || JSON.stringify(data, null, 2);
+    }
+
+    async function runAiAnalysis() {
       if (Object.keys(window.historyData).length === 0) return window.showToast('Log a few workouts first so there is data to analyze.', true);
 
       const card = document.getElementById('ai-response-card');
@@ -1540,18 +1680,10 @@ Provide recommendations in English on:
 3. Exercise substitutions for stalled movements.`;
 
       try {
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          headers: buildAiHeaders(),
-          body: JSON.stringify({ prompt: prompt, historyData: window.historyData })
-        });
-
-        if (!res.ok) throw new Error(`API responded with status ${res.status}`);
-
-        const data = await res.json();
-        const text = data?.text || data?.response || data?.choices?.[0]?.message?.content || (typeof data === 'string' ? data : null);
-
-        textEl.innerText = text || JSON.stringify(data, null, 2) || 'No response received from the AI coach.';
+        const text = getAiProvider() === 'gemini'
+          ? await callGemini(prompt)
+          : await callCustomEndpoint(prompt);
+        textEl.innerText = text || 'No response received from the AI coach.';
       } catch (e) {
         textEl.innerText = 'Error connecting to the AI coach: ' + e.message;
       }
