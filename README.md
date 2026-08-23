@@ -63,11 +63,30 @@ With `2–3 sets × 6–10 reps, +5 kg`:
 | 50 kg × 10, 10, 8 | Stay at 50, add reps |
 | **50 kg × 10, 10, 10** | **Move up to 55 kg, back to 2 sets** |
 
+### Bodyweight exercises
+
+Pull-ups, dips and push-ups can't be loaded like a barbell, so they're handled
+separately. Mark an exercise as **Bodyweight** in the ⚙ editor and the weight
+column becomes *added* load — from a belt or vest — where `0` means pure
+bodyweight. The built-in bodyweight movements are flagged automatically.
+
+What changes:
+
+- **At the rep ceiling**, if you've set a weight step it tells you to add that to
+  a belt. With the step at `0` — no way to add load — it tells you to raise the
+  rep range or add a set, rather than inventing a weight.
+- **A deload cuts reps, not weight.** Taking 85% of "0 kg" is still zero, so a
+  bodyweight deload drops the rep target instead.
+- **Volume is counted in reps**, since there are no kilos to multiply, and the
+  progress chart plots your best set in reps instead of a flat line on zero.
+
+Put weight on a belt and it goes back to charting and progressing by added load.
+
 ### Configuring it
 
-Per exercise, via the ⚙ button in the program editor: scheme, starting sets, max
-sets, rep range, and weight increment. Defaults are Double, 2 sets, 6–10 reps,
-+2.5 kg.
+Per exercise, via the ⚙ button in the program editor: scheme, load type, starting
+sets, max sets, rep range, and weight increment. Defaults are Double, 2 sets, 6–10
+reps, +2.5 kg — and bodyweight with no increment for the movements that need it.
 
 ### Stall detection
 

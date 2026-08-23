@@ -888,6 +888,13 @@
         <option value="triple">Triple Progression (reps → sets → weight)</option>
       </select>
 
+      <label>Load Type</label>
+      <select id="scheme-bodyweight" onchange="onSchemeTypeChange()">
+        <option value="false">Weighted (barbell, dumbbell, machine)</option>
+        <option value="true">Bodyweight (pull-ups, dips, push-ups)</option>
+      </select>
+      <p class="hint" id="scheme-bw-hint" style="display:none;">The weight column becomes added load from a belt or vest. Leave it at 0 for pure bodyweight, and set the step below to 0 if you can't add weight at all.</p>
+
       <div style="display:flex; gap:8px;">
         <div style="flex:1;">
           <label>Starting Sets</label>
@@ -910,8 +917,8 @@
         </div>
       </div>
 
-      <label>Weight Step (kg)</label>
-      <input type="number" id="scheme-increment" step="0.5" min="0.5" inputmode="decimal">
+      <label id="scheme-increment-label">Weight Step (kg)</label>
+      <input type="number" id="scheme-increment" step="0.5" min="0" inputmode="decimal">
 
       <button class="btn-primary" style="margin-bottom:0;" onclick="saveSchemeChanges()">Save Progression</button>
     </div>
@@ -1166,14 +1173,35 @@
       maxSets: 3,
       repMin: 6,
       repMax: 10,
-      increment: 2.5
+      increment: 2.5,
+      // Bodyweight work progresses by reps; the weight column becomes added
+      // load (belt/vest), where 0 means pure bodyweight.
+      bodyweight: false
     };
+
+    /* Exercises from the built-in database that are bodyweight by nature, so a
+       newly added Pull-Up is set up correctly without visiting the editor. */
+    const BODYWEIGHT_BY_DEFAULT = new Set([
+      'Pull-Up', 'Chin-Up', 'Inverted Row', 'Push-Up', 'Diamond Push-Up',
+      'Dips for Chest', 'Dips for Triceps', 'Hanging Leg Raise', 'Plank',
+      'Side Plank', 'Russian Twist', 'Bicycle Crunch', 'V-Up', 'Dead Bug',
+      'Ab Wheel Rollout', 'Walking Lunge'
+    ]);
 
     /* A program entry used to be a bare exercise name. It now carries the
        progression config, so normalize both shapes to the object form. */
     function normalizeEntry(entry) {
-      if (typeof entry === 'string') return { name: entry, ...PROGRESSION_DEFAULTS };
-      return { ...PROGRESSION_DEFAULTS, ...entry, name: entry.name };
+      if (typeof entry === 'string') {
+        const bw = BODYWEIGHT_BY_DEFAULT.has(entry);
+        return { name: entry, ...PROGRESSION_DEFAULTS, bodyweight: bw, increment: bw ? 0 : PROGRESSION_DEFAULTS.increment };
+      }
+      const base = { ...PROGRESSION_DEFAULTS, ...entry, name: entry.name };
+      // Entries saved before bodyweight support get the sensible default once.
+      if (entry.bodyweight === undefined && BODYWEIGHT_BY_DEFAULT.has(entry.name)) {
+        base.bodyweight = true;
+        if (entry.increment === undefined) base.increment = 0;
+      }
+      return base;
     }
 
     function entryName(entry) {
@@ -1380,13 +1408,27 @@
       return best;
     }
 
-    function describeSets(sets) {
+    function describeSets(sets, isBodyweight) {
       if (!sets || !sets.length) return '—';
       const w = sets[0].weight;
       const sameWeight = sets.every(s => s.weight === w);
-      return sameWeight
-        ? `${w} kg × ${sets.map(s => s.reps).join(', ')}`
-        : sets.map(s => `${s.weight}×${s.reps}`).join(' | ');
+      const reps = sets.map(s => s.reps).join(', ');
+      if (!sameWeight) return sets.map(s => `${formatLoad(s.weight, isBodyweight)}×${s.reps}`).join(' | ');
+      return `${formatLoad(w, isBodyweight)} × ${reps}`;
+    }
+
+    function formatLoad(weight, isBodyweight) {
+      if (!isBodyweight) return `${weight} kg`;
+      return weight > 0 ? `BW +${weight} kg` : 'BW';
+    }
+
+    // Which exercises are bodyweight, looked up by name across all programs.
+    function isBodyweightExercise(exName) {
+      return orderedProgramNames().some(p =>
+        (window.programs[p] || []).some(e => {
+          const n = normalizeEntry(e);
+          return n.name === exName && n.bodyweight;
+        }));
     }
 
     /* ---- progression engine (deterministic; the AI layer sits on top) ---- */
@@ -1419,17 +1461,33 @@
           return {
             cfg, lastWeight: w,
             target: { weight: w, sets: setCount + 1, reps: cfg.repMax },
-            label: `${setCount + 1} sets × ${cfg.repMin}–${cfg.repMax} @ ${w} kg`,
-            advice: `All ${setCount} sets hit ${cfg.repMax}. Add a set — go for ${setCount + 1} × ${w} kg.`,
+            label: `${setCount + 1} sets × ${cfg.repMin}–${cfg.repMax}${loadSuffix(cfg, w)}`,
+            advice: `All ${setCount} sets hit ${cfg.repMax}. Add a set — go for ${setCount + 1} sets${loadPhrase(cfg, w)}.`,
             action: 'add_set'
           };
         }
+
+        /* Bodyweight with no way to add load can only progress by reps, so the
+           ceiling means the range itself is too easy — inventing a weight here
+           was what produced "move up to 2.5 kg" on pull-ups. */
+        if (cfg.bodyweight && !(cfg.increment > 0)) {
+          return {
+            cfg, lastWeight: w,
+            target: { weight: w, sets: Math.max(setCount, cfg.minSets), reps: cfg.repMax },
+            label: `${Math.max(setCount, cfg.minSets)} sets × ${cfg.repMin}–${cfg.repMax}${loadSuffix(cfg, w)}`,
+            advice: `Every set hit ${cfg.repMax} at bodyweight. Raise the rep range, or add a set, to keep progressing.`,
+            action: 'raise_range'
+          };
+        }
+
         const next = Math.round((w + cfg.increment) * 100) / 100;
         return {
           cfg, lastWeight: w,
           target: { weight: next, sets: cfg.minSets, reps: cfg.repMin },
-          label: `${cfg.minSets} sets × ${cfg.repMin}–${cfg.repMax} @ ${next} kg`,
-          advice: `Ceiling reached at ${w} kg. Move up to ${next} kg and restart at ${cfg.repMin} reps.`,
+          label: `${cfg.minSets} sets × ${cfg.repMin}–${cfg.repMax}${loadSuffix(cfg, next)}`,
+          advice: cfg.bodyweight
+            ? `Every set hit ${cfg.repMax}. Add ${cfg.increment} kg on a belt and restart at ${cfg.repMin} reps.`
+            : `Ceiling reached at ${w} kg. Move up to ${next} kg and restart at ${cfg.repMin} reps.`,
           action: 'increase_weight'
         };
       }
@@ -1438,10 +1496,22 @@
       return {
         cfg, lastWeight: w,
         target: { weight: w, sets: Math.max(setCount, cfg.minSets), reps: Math.min(lowest + 1, cfg.repMax) },
-        label: `${Math.max(setCount, cfg.minSets)} sets × ${cfg.repMin}–${cfg.repMax} @ ${w} kg`,
-        advice: `Stay at ${w} kg and add reps — beat ${topSets.map(s => s.reps).join(', ')}.`,
+        label: `${Math.max(setCount, cfg.minSets)} sets × ${cfg.repMin}–${cfg.repMax}${loadSuffix(cfg, w)}`,
+        advice: `${cfg.bodyweight && !w ? 'Stay at bodyweight' : `Stay at ${w} kg`} and add reps — beat ${topSets.map(s => s.reps).join(', ')}.`,
         action: 'add_reps'
       };
+    }
+
+    /* For a bodyweight exercise the weight column is added load, so 0 has to
+       read as "bodyweight" rather than as a zero-kilo lift. */
+    function loadSuffix(cfg, weight) {
+      if (!cfg.bodyweight) return ` @ ${weight} kg`;
+      return weight > 0 ? ` @ BW +${weight} kg` : ' @ bodyweight';
+    }
+
+    function loadPhrase(cfg, weight) {
+      if (!cfg.bodyweight) return ` at ${weight} kg`;
+      return weight > 0 ? ` at bodyweight +${weight} kg` : ' at bodyweight';
     }
 
     /* Deload numbers come from the engine, never from the model: it does not
@@ -1458,12 +1528,27 @@
 
       const w = workingWeight(last.sets);
       const inc = cfg.increment;
+
+      /* Taking a percentage of bodyweight's "0 kg" yields 0, which the old
+         rounding then pushed up to one increment — a light week that told you
+         to ADD weight to your pull-ups. Bodyweight deloads cut reps instead. */
+      if (cfg.bodyweight && !w) {
+        const reps = Math.max(1, Math.round(cfg.repMax * pct / 100));
+        return {
+          cfg, pct, lastWeight: w,
+          target: { weight: 0, sets: cfg.minSets, reps },
+          label: `Deload · ${cfg.minSets} × ${reps} @ bodyweight`,
+          advice: `Light week — ${reps} reps instead of ${cfg.repMax}. Stop well short of failure.`,
+          action: 'deload'
+        };
+      }
+
       const target = Math.max(inc, Math.round((w * pct / 100) / inc) * inc);
 
       return {
         cfg, pct, lastWeight: w,
         target: { weight: target, sets: cfg.minSets, reps: cfg.repMin },
-        label: `Deload · ${cfg.minSets} × ${cfg.repMin} @ ${target} kg`,
+        label: `Deload · ${cfg.minSets} × ${cfg.repMin}${loadSuffix(cfg, target)}`,
         advice: `Light week — ${pct}% of ${w} kg. Stop well short of failure.`,
         action: 'deload'
       };
@@ -1845,7 +1930,10 @@
     function schemeSummary(entry) {
       const c = normalizeEntry(entry);
       const sets = c.scheme === 'triple' ? `${c.minSets}–${c.maxSets}` : `${c.minSets}`;
-      return `${c.scheme === 'triple' ? 'Triple' : 'Double'} · ${sets} × ${c.repMin}–${c.repMax} · +${c.increment}kg`;
+      const step = c.bodyweight
+        ? (c.increment > 0 ? `BW · +${c.increment}kg` : 'BW · reps only')
+        : `+${c.increment}kg`;
+      return `${c.scheme === 'triple' ? 'Triple' : 'Double'} · ${sets} × ${c.repMin}–${c.repMax} · ${step}`;
     }
 
     function reorderableRow({ index, total, label, sub, moveFn, removeFn, editFn }) {
@@ -2063,6 +2151,7 @@
       const c = normalizeEntry(entry);
       document.getElementById('scheme-modal-title').textContent = c.name;
       document.getElementById('scheme-type').value = c.scheme;
+      document.getElementById('scheme-bodyweight').value = String(!!c.bodyweight);
       document.getElementById('scheme-min-sets').value = c.minSets;
       document.getElementById('scheme-max-sets').value = c.maxSets;
       document.getElementById('scheme-rep-min').value = c.repMin;
@@ -2074,7 +2163,11 @@
 
     function onSchemeTypeChange() {
       const isTriple = document.getElementById('scheme-type').value === 'triple';
+      const isBw = document.getElementById('scheme-bodyweight').value === 'true';
       document.getElementById('scheme-max-sets-field').style.display = isTriple ? '' : 'none';
+      document.getElementById('scheme-bw-hint').style.display = isBw ? '' : 'none';
+      document.getElementById('scheme-increment-label').textContent =
+        isBw ? 'Added Weight Step (kg, 0 if you can\'t add load)' : 'Weight Step (kg)';
     }
 
     function closeSchemeModal() {
@@ -2086,6 +2179,7 @@
       if (!schemeEditTarget) return closeSchemeModal();
 
       const scheme = document.getElementById('scheme-type').value;
+      const bodyweight = document.getElementById('scheme-bodyweight').value === 'true';
       const minSets = parseInt(document.getElementById('scheme-min-sets').value, 10);
       const maxSets = parseInt(document.getElementById('scheme-max-sets').value, 10);
       const repMin = parseInt(document.getElementById('scheme-rep-min').value, 10);
@@ -2094,7 +2188,9 @@
 
       if (!(minSets >= 1)) return window.showToast('Sets must be at least 1.', true);
       if (!(repMin >= 1) || !(repMax >= repMin)) return window.showToast('Rep range is not valid.', true);
-      if (!(increment > 0)) return window.showToast('Weight step must be greater than 0.', true);
+      // Bodyweight may legitimately have no way to add load, so 0 is allowed there.
+      if (isNaN(increment) || increment < 0) return window.showToast('Weight step is not valid.', true);
+      if (!bodyweight && !(increment > 0)) return window.showToast('Weight step must be greater than 0.', true);
       if (scheme === 'triple' && !(maxSets >= minSets)) {
         return window.showToast('Max sets must be at least the starting sets.', true);
       }
@@ -2103,6 +2199,7 @@
       list[index] = {
         ...list[index],
         scheme,
+        bodyweight,
         minSets,
         maxSets: scheme === 'triple' ? maxSets : minSets,
         repMin,
@@ -2195,7 +2292,7 @@
 
         let setRows = '';
         for (let i = 0; i < rowCount; i++) {
-          setRows += setRowHtml(idx, i, savedSets[i], targetWeight);
+          setRows += setRowHtml(idx, i, savedSets[i], targetWeight, entry.bodyweight);
         }
 
         html += `
@@ -2215,13 +2312,13 @@
             <p class="advice">${escapeHtml(plan.advice)}</p>
 
             <div class="pr-line">
-              <span><b>Best:</b> ${best ? `${best.weight} kg × ${best.reps} <small>(${formatDate(best.date)})</small>` : '—'}</span>
-              <span><b>Last:</b> ${last ? `${escapeHtml(describeSets(last.sets))} <small>(${formatDate(last.date)})</small>` : '—'}</span>
+              <span><b>Best:</b> ${best ? `${formatLoad(best.weight, entry.bodyweight)} × ${best.reps} <small>(${formatDate(best.date)})</small>` : '—'}</span>
+              <span><b>Last:</b> ${last ? `${escapeHtml(describeSets(last.sets, entry.bodyweight))} <small>(${formatDate(last.date)})</small>` : '—'}</span>
             </div>
 
             ${tip ? `<div class="coach-tip"><b>Coach:</b> ${escapeHtml(tip)}</div>` : ''}
 
-            <div id="sets-box-${idx}" data-target="${targetWeight}">${setRows}</div>
+            <div id="sets-box-${idx}" data-target="${targetWeight}" data-bw="${entry.bodyweight ? 1 : 0}">${setRows}</div>
             <button class="btn-add-set" onclick="addSetRowToSession(${idx})">+ Add Set</button>
           </div>`;
       });
@@ -2316,16 +2413,20 @@
     /* A confirmed set is locked, green and already persisted; an open row is
        editable. The weight is a real value, not a hint, because saving needs
        a number there — a grey placeholder got sets discarded silently. */
-    function setRowHtml(exIdx, setIdx, savedSet, targetWeight) {
+    function setRowHtml(exIdx, setIdx, savedSet, targetWeight, isBodyweight) {
       const done = !!savedSet;
       const w = done ? savedSet.weight : (targetWeight !== '' ? targetWeight : '');
       const r = done ? savedSet.reps : '';
       const auto = !done && targetWeight !== '';
+      // For bodyweight the column is added load, so it is labelled "+kg" and 0
+      // is a meaningful entry rather than a missing one.
+      const unit = isBodyweight ? '+kg' : 'kg';
       return `
         <div class="set-row${done ? ' done' : ''}" data-set="${setIdx}">
           <span>Set ${setIdx + 1}</span>
-          <input type="number" inputmode="decimal" placeholder="kg" class="w-${exIdx}${auto ? ' auto' : ''}"
-                 value="${w}" ${done ? 'readonly' : ''} oninput="this.classList.remove('auto')">
+          <input type="number" inputmode="decimal" placeholder="${unit}" class="w-${exIdx}${auto ? ' auto' : ''}"
+                 value="${w}" ${done ? 'readonly' : ''} oninput="this.classList.remove('auto')"
+                 aria-label="${isBodyweight ? 'Added weight in kg' : 'Weight in kg'}">
           <input type="number" inputmode="numeric" placeholder="reps" class="r-${exIdx}"
                  value="${r}" ${done ? 'readonly' : ''}>
           <button class="set-ok${done ? ' on' : ''}" onclick="toggleSetConfirm(${exIdx}, ${setIdx})"
@@ -2349,7 +2450,8 @@
       const rows = box.querySelectorAll('.set-row');
       const lastW = rows.length ? rows[rows.length - 1].querySelector(`.w-${exIdx}`).value : '';
       const weight = lastW || box.dataset.target || '';
-      box.insertAdjacentHTML('beforeend', setRowHtml(exIdx, rows.length, null, weight));
+      box.insertAdjacentHTML('beforeend',
+        setRowHtml(exIdx, rows.length, null, weight, box.dataset.bw === '1'));
     }
 
     function currentProgram() {
@@ -2551,13 +2653,21 @@
       list.innerHTML = rows.map(s => {
         const exCount = s.exercises.filter(e => (e.sets || []).length).length;
         const setCount = s.exercises.reduce((n, e) => n + (e.sets || []).length, 0);
-        const volume = s.exercises.reduce((v, e) =>
-          v + (e.sets || []).reduce((sv, st) => sv + st.weight * st.reps, 0), 0);
+        // Bodyweight work has no kilos to multiply, so it is counted in reps —
+        // otherwise a whole session of pull-ups reads as "0 kg volume".
+        const volume = s.exercises.reduce((v, e) => isBodyweightExercise(e.name) ? v
+          : v + (e.sets || []).reduce((sv, st) => sv + st.weight * st.reps, 0), 0);
+        const bwReps = s.exercises.reduce((n, e) => isBodyweightExercise(e.name)
+          ? n + (e.sets || []).reduce((sr, st) => sr + st.reps, 0) : n, 0);
+        const loadLabel = [
+          volume ? `${Math.round(volume)} kg volume` : '',
+          bwReps ? `${bwReps} bodyweight reps` : ''
+        ].filter(Boolean).join(' · ') || '0 kg volume';
         return `
           <div class="program-row tappable" onclick="openHistorySession('${jsAttr(s.id)}')">
             <span class="reorder-label">
               <span><strong>${formatDate(s.date)}</strong></span>
-              <small>${exCount} exercises · ${setCount} sets · ${Math.round(volume)} kg volume</small>
+              <small>${exCount} exercise${exCount === 1 ? '' : 's'} · ${setCount} set${setCount === 1 ? '' : 's'} · ${loadLabel}</small>
             </span>
             <span class="chev">›</span>
           </div>`;
@@ -2871,6 +2981,8 @@
             program: pName,
             exercise: entry.name,
             scheme: entry.scheme,
+            bodyweight: !!entry.bodyweight,
+            canAddLoad: !entry.bodyweight || entry.increment > 0,
             setsRange: entry.scheme === 'triple' ? [entry.minSets, entry.maxSets] : [entry.minSets, entry.minSets],
             repRange: [entry.repMin, entry.repMax],
             incrementKg: entry.increment,
@@ -2903,7 +3015,9 @@ A deterministic engine already computed the routine next step for each exercise 
 - when a lifter is stalling and should add a set (moving Double toward Triple),
 - when to finish an exercise with a drop set for extra intensity,
 - when an exercise has stopped working and should be swapped,
-- when accumulated fatigue calls for a deload week ("deload") or a full rest week ("rest").`;
+- when accumulated fatigue calls for a deload week ("deload") or a full rest week ("rest").
+
+For an exercise marked "bodyweight", the weight figure is added load from a belt or vest, and 0 means pure bodyweight. When "canAddLoad" is false the lifter cannot add load at all, so never suggest adding weight there — suggest more reps, more sets, a harder variation, or slower tempo instead.`;
 
     // Called from the workout screen, scoped to the program being trained.
     async function askCoach(program) {
@@ -3067,15 +3181,26 @@ ${COACH_SCHEMA_HINT}`;
       if (currentChart) { currentChart.destroy(); currentChart = null; }
       if (!exName || !window.historyData[exName]) return;
 
-      const labels = window.historyData[exName].map(e => e.date);
-      const dataPoints = window.historyData[exName].map(e => Math.max(...e.sets.map(s => s.weight)));
+      const recs = window.historyData[exName];
+      const labels = recs.map(e => e.date);
+
+      /* Plotting max weight for a bodyweight exercise draws a flat line on
+         zero, so those are charted by best reps instead. Added load (belt)
+         still charts as weight. */
+      const bw = isBodyweightExercise(exName);
+      const hasLoad = recs.some(e => e.sets.some(s => s.weight > 0));
+      const byReps = bw && !hasLoad;
+      const dataPoints = recs.map(e => byReps
+        ? Math.max(...e.sets.map(s => s.reps))
+        : Math.max(...e.sets.map(s => s.weight)));
+      const seriesLabel = byReps ? 'Best Set (reps)' : (bw ? 'Added Weight (kg)' : 'Max Weight (kg)');
 
       currentChart = new Chart(ctx, {
         type: 'line',
         data: {
           labels: labels,
           datasets: [{
-            label: 'Max Weight (kg)',
+            label: seriesLabel,
             data: dataPoints,
             borderColor: '#e8a33d',
             backgroundColor: 'rgba(232, 163, 61, 0.18)',
