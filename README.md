@@ -23,16 +23,16 @@ performance, so you know what you're chasing.
 **Keeps a full history.** Browse by workout name, then by date, then open any past
 session to fix a mistake — weights, reps, exercise order, or delete it entirely.
 
-**Adds an AI coach on top.** Optional. It advises on the judgement calls the rules
-can't make: when a stall needs an extra set, when to finish with a drop set, when
-an exercise has stopped working, and when to take a lighter week.
+**Flags stalls, doesn't decide for you.** Each exercise card shows how many
+sessions in a row went by with no progress. What to do about it — push through,
+ease off, swap the exercise — is your call.
 
 ---
 
 ## The progression engine
 
-This is the core of the app, and it is plain deterministic code — not the AI. The
-rules are unambiguous, and language models are unreliable at arithmetic.
+This is the core of the app: plain deterministic code, unambiguous rules, no
+guesswork.
 
 ### Double Progression
 
@@ -90,9 +90,17 @@ reps, +2.5 kg — and bodyweight with no increment for the movements that need i
 
 ### Stall detection
 
-Three consecutive sessions at the same working weight with no improvement in total
-reps flags the exercise as **Plateau**. That's the signal the AI coach uses to
-suggest adding a set, a drop set, or a different exercise.
+Progress is judged set by set, not by total reps. A session counts as progress
+only if the working weight went up, or every matched set at the same weight held
+or improved (an added set counts too, as long as nothing existing dropped). So
+`50 kg × 10, 10` → `50 kg × 8, 8, 8` is **not** progress, even though the rep
+total rose — the first set went backwards.
+
+The exercise card shows a running count: *"3 sessions without progress"*. It
+resets to zero the moment a session clears the bar above. Deload sessions (see
+below) are skipped when counting, so a deliberately light day never breaks or
+inflates the streak. The app doesn't suggest anything from this number — no
+deload, no drop set, no swap. It's yours to read.
 
 ### If you do more or fewer sets than planned
 
@@ -110,25 +118,17 @@ already maxing.
 
 ---
 
-## Deload and rest weeks
+## Deload days
 
-When the coach recommends a lighter week, you get a banner with two buttons —
-**This week** or **Next week**. Weeks run Sunday to Saturday.
+A **Deload** checkbox sits on each session header. Check it on a day you're
+deliberately training light and the app changes nothing about your numbers — no
+percentage math, no prefilled weight. It's purely a flag for reality: this
+session shouldn't count toward progression.
 
-A deload week changes the numbers: the target and the prefilled weight become a
-percentage of your working weight (85% by default, adjustable, rounded to your
-configured increment). A rest week changes nothing — it's a reminder, since a week
-off has nothing to log.
-
-**The week sets the default; the day decides.** Inside a deload week each workout
-has a Deload / Full workout toggle. Feeling strong? Flip to full and your real
-working weights come back, without cancelling the week.
-
-**What gets recorded is what you did.** A session is flagged as a deload only if
-you actually trained light. This matters: the progression engine and stall
-detection skip flagged sessions, so a light week can't reset your working weights
-or read as a plateau. If the flag tracked the plan instead of reality, a full
-workout during a deload week would silently erase progress.
+**What gets recorded is what you did.** The progression engine and the
+sessions-without-progress counter both skip flagged sessions, so a light day
+can't reset your working weight or read as a stall. Check it, log whatever you
+actually did, and move on — deciding when a light day is warranted is up to you.
 
 ---
 
@@ -155,36 +155,19 @@ address bar.
 > Never delete and re-add the app to force an update — on iOS that takes your
 > saved history with it.
 
-### Connecting the AI coach (optional)
-
-1. Get a key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
-2. **AI Coach → paste the key → Test Connection**
-
-Test Connection validates the key *and* fetches the list of models your key can
-use, then picks a `flash` model. Model IDs are deliberately not hardcoded — Google
-ships new ones often, and a hardcoded name would go stale.
-
-The browser calls Google directly; there's no proxy in between. A **Custom
-endpoint** option is available if you'd rather run your own backend, in which case
-it receives `POST {prompt, historyData}` with the key as a bearer token.
-
 ---
 
 ## Your data
 
-Everything lives in `localStorage` on the device. Nothing is uploaded, and the AI
-key is sent only to the provider you configure.
+Everything lives in `localStorage` on the device. Nothing is uploaded.
 
 | Key | Contents |
 |---|---|
-| `fit_sessions` | Every workout: program, date, exercises, sets — the source of truth |
+| `fit_sessions` | Every workout: program, date, exercises, sets, deload flag — the source of truth |
 | `fit_programs` | Programs, each exercise with its progression config |
 | `fit_program_order` | Display order of programs |
 | `fit_ex_db` | Exercise database (77 built in, across 6 muscle groups) |
-| `fit_coach_tips` | Last AI advice, cached per program |
-| `fit_deload_week` / `fit_deload_pct` | Active light week and its percentage |
 | `fit_history` | Per-exercise view, derived from `fit_sessions` |
-| `ai_*` | Provider, key, model, endpoint |
 
 ⚠️ **There is no backup and no export.** Clearing site data in your browser, or
 switching devices, loses your history. This is the biggest gap in the app today.
@@ -214,11 +197,10 @@ are cached best-effort, so an unreachable CDN can't stop the worker installing.
 
 | Screen | Purpose |
 |---|---|
-| Workout Tracker | Train: targets, PRs, per-set logging, coach tips |
+| Workout Tracker | Train: targets, PRs, per-set logging, stall counter, deload flag |
 | Program Builder | Build programs, order exercises, set progression schemes |
 | Muscles & Exercises | Manage the exercise database |
 | Workout History | Browse and edit past sessions |
-| AI Coach | Provider settings and a full-plan analysis |
 | Analytics | Progress over time, per exercise |
 
 ---
@@ -226,28 +208,21 @@ are cached best-effort, so an unreachable CDN can't stop the worker installing.
 ## Security
 
 The app is a static page with no backend, so there is no server to break into and
-nothing of yours on anyone else's machine. Two things were checked directly:
+nothing of yours on anyone else's machine.
 
-- **Your API key stays yours.** It is written only to `localStorage`, sent only to
-  the provider you configured, and passed as a request header rather than in a URL
-  — URLs leak into logs and history. It is not in cookies, and not in the offline
-  cache.
-- **Injection.** Exercise names, program names and AI replies are all rendered as
-  HTML, so they are escaped for quotes as well as angle brackets. An earlier
-  version escaped only the latter, which let a quote in a name close an attribute
-  and inject an event handler; that is fixed and tested with the same payloads.
+- **Injection.** Exercise names and program names are rendered as HTML, so they
+  are escaped for quotes as well as angle brackets. An earlier version escaped
+  only the latter, which let a quote in a name close an attribute and inject an
+  event handler; that is fixed and tested with the same payloads.
 
-A Content Security Policy backs this up: `connect-src` limits outbound requests to
-Google, so even a future scripting bug could not post your key elsewhere, and
-`img-src` blocks beacon exfiltration.
+A Content Security Policy backs this up: `connect-src` is limited to the app's own
+origin — the app makes no outbound network calls at all — and `img-src` blocks
+beacon exfiltration.
 
-Publishing the code changes none of this — there are no keys in the repository or
-its history, and anyone opening the site gets their own empty storage. What the
-app cannot protect against is someone holding your unlocked phone; that is your
-device passcode's job.
-
-> Adding a custom AI endpoint on another domain means adding that domain to
-> `connect-src` in the CSP.
+Publishing the code changes none of this — there is nothing secret in the
+repository or its history, and anyone opening the site gets their own empty
+storage. What the app cannot protect against is someone holding your unlocked
+phone; that is your device passcode's job.
 
 ---
 
@@ -259,9 +234,6 @@ device passcode's job.
 - **No cloud sync.** There was a Firebase screen that never had working
   credentials; it was removed rather than left as dead UI. Nothing syncs
   anywhere.
-- **The AI path has not been exercised against the live Google API.** Request
-  shape, response parsing and stall detection are verified against recorded
-  Google-format responses; real-world answer quality is unverified.
 - **Not tested on a physical iPhone.** Verified in Chromium at iPhone viewport size.
 - **The progress chart needs one online visit.** Its library comes from a CDN. Open
   the Analytics screen once with a connection and it is cached for offline use;

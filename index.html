@@ -15,7 +15,7 @@
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src 'self' https://fonts.gstatic.com;
     img-src 'self' data:;
-    connect-src 'self' https://generativelanguage.googleapis.com;
+    connect-src 'self';
     object-src 'none';
     base-uri 'self';
     form-action 'none'">
@@ -450,7 +450,9 @@
       border: 1px solid var(--accent-dim); border-radius: 6px;
       padding: 3px 9px; font-size: 0.74rem; font-weight: 700;
     }
-    .target-chip.warn { background: rgba(239,91,91,0.12); color: var(--danger); border-color: var(--danger); }
+    /* Informational only — this is not a warning, so it stays neutral rather
+       than alarm-colored. The app never suggests what to do about it. */
+    .target-chip.info { background: var(--bg-input); color: var(--text-sub); border-color: var(--border); }
 
     .advice { font-size: 0.82rem; color: var(--text-sub); line-height: 1.45; margin-bottom: 8px; }
 
@@ -461,32 +463,6 @@
     }
     .pr-line b { color: var(--text); font-weight: 700; }
     .pr-line small { opacity: 0.75; }
-
-    .coach-tip {
-      background: rgba(139,123,255,0.1); border: 1px solid var(--violet);
-      border-radius: 8px; padding: 8px 10px; font-size: 0.8rem;
-      color: #e7e3ff; line-height: 1.45; margin-bottom: 10px;
-    }
-    .coach-tip b { color: var(--violet); }
-
-    .coach-banner {
-      display: flex; flex-direction: column; gap: 3px;
-      border-radius: 10px; padding: 12px 14px; margin-bottom: 14px;
-      background: rgba(239,91,91,0.1); border: 1px solid var(--danger);
-      font-size: 0.84rem; line-height: 1.45;
-    }
-    .coach-banner strong { color: var(--danger); text-transform: uppercase; font-size: 0.76rem; letter-spacing: 0.04em; }
-
-    .coach-row { display: flex; align-items: flex-start; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; line-height: 1.45; }
-    .coach-row:last-child { border-bottom: none; }
-    .action-chip {
-      flex-shrink: 0; border-radius: 6px; padding: 2px 8px;
-      font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
-      background: var(--bg-input); color: var(--text-sub); border: 1px solid var(--border);
-    }
-    .action-chip.action-increase_weight { background: rgba(82,199,133,0.14); color: var(--success); border-color: var(--success); }
-    .action-chip.action-add_set { background: rgba(232,163,61,0.14); color: var(--accent); border-color: var(--accent-dim); }
-    .action-chip.action-swap, .action-chip.action-dropset { background: rgba(139,123,255,0.14); color: var(--violet); border-color: var(--violet); }
 
     /* A logged set stays visible and editable instead of being cleared. */
     .set-row.done input { border-color: var(--success); background: rgba(82,199,133,0.07); }
@@ -509,58 +485,17 @@
     /* An auto-filled weight reads as a suggestion until you touch it. */
     input.auto { color: var(--accent); border-style: dashed; }
 
-    /* ---- light week ---- */
-    .light-week {
-      background: var(--bg-elevated); border: 1px solid var(--teal);
-      border-radius: 12px; padding: 12px 14px; margin-bottom: 14px;
-      display: flex; flex-direction: column; gap: 10px;
+    /* Manual deload flag on the session header — no weeks, no percentages,
+       just a marker so a light day you called yourself is excluded from
+       progression and from the stuck-session count. */
+    .deload-toggle {
+      display: flex; align-items: center; gap: 6px; margin: 0;
+      font-size: 0.78rem; font-weight: 600; text-transform: none;
+      letter-spacing: normal; color: var(--text-sub); cursor: pointer;
     }
-    .lw-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
-    .lw-head strong { font-family: var(--font-display); text-transform: uppercase; letter-spacing: .04em; font-size: .82rem; color: var(--teal); }
-    .lw-head span { font-size: .78rem; color: var(--text-sub); font-variant-numeric: tabular-nums; }
-
-    .mode-toggle { display: flex; gap: 0; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
-    .mode-toggle button {
-      flex: 1; width: auto; margin: 0; border: none; border-radius: 0;
-      background: var(--bg-input); color: var(--text-sub);
-      font-size: .85rem; font-weight: 700; padding: 10px 8px;
-    }
-    .mode-toggle button.on { background: var(--teal); color: #0b2422; }
-
-    .lw-foot { display: flex; align-items: center; gap: 8px; }
-    .lw-foot label { margin: 0; font-size: .72rem; }
-    .lw-foot input {
-      width: 68px; margin: 0; padding: 7px 8px; text-align: center;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .chip-btn {
-      width: auto; margin: 0; padding: 6px 14px; border-radius: 999px;
-      font-size: .78rem; font-weight: 700;
-      background: var(--bg-input); color: var(--text); border: 1px solid var(--border);
-    }
-    .chip-btn:hover { border-color: var(--accent); color: var(--accent); }
-    .banner-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
-
-    .coach-banner.rest { background: rgba(79,209,197,0.1); border-color: var(--teal); }
-    .coach-banner.rest strong { color: var(--teal); }
-
-    /* ---- ask-the-coach bar ---- */
-    .coach-bar {
-      display: flex; align-items: center; gap: 12px;
-      background: var(--bg-elevated); border: 1px solid var(--violet);
-      border-radius: 12px; padding: 10px 14px; margin-bottom: 14px;
-    }
-    .coach-btn {
-      width: auto; margin: 0; padding: 9px 16px; border-radius: 9px;
-      background: var(--violet); color: #17123a; border: none;
-      font-size: .86rem; font-weight: 700; white-space: nowrap;
-    }
-    .coach-btn:disabled { opacity: .55; cursor: default; }
-    .coach-bar small { color: var(--text-sub); font-size: .76rem; }
+    .deload-toggle input { width: auto; margin: 0; }
 
     .exercise-card.is-deload { border-color: var(--teal); }
-    .target-chip.deload { background: rgba(79,209,197,0.12); color: var(--teal); border-color: var(--teal); }
 
   </style>
 </head>
@@ -596,10 +531,6 @@
       <li class="nav-item" data-view="exercises" onclick="navigate('exercises', this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 15c-2 0-3-1.5-3-3s1-3 3-3"/><path d="M6 9c0-2.5 2-4.5 5-4.5 4 0 6 3 6 6.5 0 3-1.5 5-4 5.5"/><circle cx="17" cy="17" r="3"/></svg>
         Muscles & Exercises
-      </li>
-      <li class="nav-item" data-view="ai" onclick="navigate('ai', this)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="8" width="16" height="12" rx="3"/><circle cx="9" cy="14" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="14" r="1.4" fill="currentColor" stroke="none"/><line x1="12" y1="8" x2="12" y2="4"/><circle cx="12" cy="3" r="1" fill="currentColor" stroke="none"/></svg>
-        AI Coach
       </li>
       <li class="nav-item" data-view="history" onclick="navigate('history', this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
@@ -702,53 +633,6 @@
           <option value="Core">Core</option>
         </select>
         <div id="exercise-db-list" style="margin-top: 8px;"></div>
-      </div>
-    </section>
-
-    <section id="view-ai" class="view-section">
-      <div class="card">
-        <h3>AI Coach Settings</h3>
-        <p class="hint">Connect an AI provider to analyze your training data.</p>
-
-        <label>Provider</label>
-        <select id="ai-provider-select" onchange="onAiProviderChange()">
-          <option value="gemini">Google Gemini</option>
-          <option value="custom">Custom endpoint</option>
-        </select>
-
-        <label id="ai-apikey-label">Google AI API Key</label>
-        <input type="password" id="ai-apikey-input" placeholder="Paste your API key">
-        <p class="hint" id="ai-key-hint">Get a free key at aistudio.google.com/apikey</p>
-
-        <div id="ai-model-field">
-          <label>Model</label>
-          <select id="ai-model-select">
-            <option value="">Run Test Connection to load models</option>
-          </select>
-        </div>
-
-        <div id="ai-endpoint-field" style="display:none;">
-          <label>API Endpoint URL</label>
-          <input type="text" id="ai-endpoint-input" placeholder="https://...">
-          <p class="hint">Receives a POST with {prompt, historyData}. The key above, if set, is sent as a Bearer token.</p>
-        </div>
-
-        <div style="display:flex; gap:8px;">
-          <button class="btn-secondary" style="margin-bottom:0;" onclick="saveAiSettings()">Save AI Settings</button>
-          <button class="btn-teal" style="margin-bottom:0;" onclick="testAiConnection()">Test Connection</button>
-        </div>
-        <p class="hint" style="margin-top:10px; margin-bottom:0;">Your key is stored only on this device and is sent straight to the provider — it never passes through any server of ours. Anyone with access to this device can read it.</p>
-      </div>
-
-      <div class="card">
-        <h3>Smart Training Analysis</h3>
-        <p class="hint">Analyze fatigue, plateaus, and get deload or substitution recommendations based on your logged sessions.</p>
-        <button class="btn-teal" onclick="runAiAnalysis()">Run AI Progress Analysis</button>
-      </div>
-
-      <div id="ai-response-card" class="card" style="display: none;">
-        <h3>AI Coach Recommendations</h3>
-        <div id="ai-response-text" class="ai-box"></div>
       </div>
     </section>
 
@@ -1052,15 +936,6 @@
     window.historyData = safeParse('fit_history', {});
     window.sessions = safeParse('fit_sessions', null);
     window.programOrder = safeParse('fit_program_order', null);
-    window.coachTips = safeParse('fit_coach_tips', null);
-    window.deloadWeek = safeParse('fit_deload_week', null);
-
-    // Share of the working weight kept during a light week; user-adjustable.
-    const DELOAD_PCT_DEFAULT = 85;
-    function deloadPct() {
-      const v = parseInt(localStorage.getItem('fit_deload_pct'), 10);
-      return (v >= 40 && v <= 95) ? v : DELOAD_PCT_DEFAULT;
-    }
 
     const PROGRESSION_DEFAULTS = {
       scheme: 'double',   // 'double' | 'triple'
@@ -1144,13 +1019,6 @@
         }));
       }
 
-      // Coach advice is now cached per program. Old flat advice is stale
-      // guidance rather than user data, so drop it — one tap regenerates it.
-      if (!window.coachTips || !window.coachTips.byProgram) window.coachTips = { byProgram: {} };
-
-      // A finished light week should not linger.
-      if (window.deloadWeek && window.deloadWeek.end < todayStr()) window.deloadWeek = null;
-
       // Sessions are authoritative now, so derive historyData before anything reads it.
       rebuildHistoryData();
     }
@@ -1201,67 +1069,19 @@
 
     /* ---- calendar week (Sunday–Saturday) ---- */
 
-    function weekBounds(weeksAhead) {
-      const d = new Date();
-      d.setHours(12, 0, 0, 0);                       // avoid DST edges
-      d.setDate(d.getDate() - d.getDay() + (weeksAhead || 0) * 7);   // getDay: 0 = Sunday
-      const start = new Date(d);
-      const end = new Date(d);
-      end.setDate(end.getDate() + 6);
-      const fmt = x => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
-      return { start: fmt(start), end: fmt(end) };
-    }
-
-    function activeLightWeek() {
-      const w = window.deloadWeek;
-      if (!w) return null;
-      const t = todayStr();
-      return (t >= w.start && t <= w.end) ? w : null;
-    }
-
-    function startLightWeek(type, weeksAhead) {
-      const { start, end } = weekBounds(weeksAhead);
-      window.deloadWeek = { type, start, end };
-      saveLocal();
-      const program = document.getElementById('select-active-program').value;
-      if (program && window.programs[program]) renderWorkoutSession(program);
-      const range = `${formatDate(start)}–${formatDate(end)}`;
-      window.showToast(type === 'rest'
-        ? `Rest week marked: ${range}`
-        : `Deload week active: ${range}`);
-    }
-
-    function endLightWeek() {
-      window.deloadWeek = null;
-      workoutModeOverride = null;
-      saveLocal();
-      const program = document.getElementById('select-active-program').value;
-      if (program && window.programs[program]) renderWorkoutSession(program);
-      window.showToast('Back to normal training.');
-    }
-
-    function setDeloadPct(value) {
-      const v = parseInt(value, 10);
-      if (!(v >= 40 && v <= 95)) return window.showToast('Deload percentage must be between 40 and 95.', true);
-      localStorage.setItem('fit_deload_pct', String(v));
-      const program = document.getElementById('select-active-program').value;
-      if (program && window.programs[program]) renderWorkoutSession(program);
-    }
-
-    /* What this workout actually is. The week sets the default; the session
-       records the truth, because the plan and the day often disagree. */
-    function getWorkoutMode(program) {
+    /* Deload is a manual flag you set yourself — no suggestions, no computed
+       percentages. It only exists so a light day you call yourself is excluded
+       from progression and from the "sessions without progress" count below;
+       you pick the weight. */
+    function isDeloadToday(program) {
       const saved = getTodaySession(program);
-      if (saved) return saved.deload ? 'deload' : 'full';
-      if (workoutModeOverride) return workoutModeOverride;
-      const w = activeLightWeek();
-      return (w && w.type === 'deload') ? 'deload' : 'full';
+      return saved ? !!saved.deload : deloadToggle;
     }
 
-    function setWorkoutMode(program, mode) {
-      workoutModeOverride = mode;
+    function toggleDeloadToday(program) {
       const saved = getTodaySession(program);
-      if (saved) { saved.deload = (mode === 'deload'); saveLocal(); }
+      if (saved) { saved.deload = !saved.deload; saveLocal(); }
+      else { deloadToggle = !deloadToggle; }
       renderWorkoutSession(program);
     }
 
@@ -1433,56 +1253,45 @@
       return weight > 0 ? ` at bodyweight +${weight} kg` : ' at bodyweight';
     }
 
-    /* Deload numbers come from the engine, never from the model: it does not
-       know your working weight and cannot round to plates you own. */
-    function computeDeload(entry, history) {
-      const cfg = normalizeEntry(entry);
-      const last = history[history.length - 1];
-      const pct = deloadPct();
+    /* Did the lifter progress from one session to the next on this exercise?
+       Compared set-by-set at the working weight, not by summed reps — a set
+       that dropped from 10 to 8 is a regression even if a third set later in
+       the session pushed the total higher.
 
-      if (!last) {
-        return { cfg, target: null, pct, label: `Deload · ${cfg.minSets} × ${cfg.repMin}`,
-                 advice: 'Light week. Pick a comfortable weight and stay well short of failure.' };
+         - working weight went up                            -> progress
+         - same weight, a matched set's reps went down        -> not progress
+         - same weight, nothing went down, something went up,
+           or a new set was added without any existing one
+           dropping                                           -> progress
+         - same weight, everything identical                  -> not progress */
+    function sessionProgressed(cur, prev) {
+      const prevW = workingWeight(prev.sets);
+      const curW = workingWeight(cur.sets);
+      if (curW > prevW) return true;
+      if (curW < prevW) return false;
+
+      const prevTop = prev.sets.filter(s => s.weight === prevW);
+      const curTop = cur.sets.filter(s => s.weight === curW);
+      let improved = curTop.length > prevTop.length;
+      const n = Math.min(prevTop.length, curTop.length);
+      for (let i = 0; i < n; i++) {
+        if (curTop[i].reps > prevTop[i].reps) improved = true;
+        else if (curTop[i].reps < prevTop[i].reps) return false;
       }
-
-      const w = workingWeight(last.sets);
-      const inc = cfg.increment;
-
-      /* Taking a percentage of bodyweight's "0 kg" yields 0, which the old
-         rounding then pushed up to one increment — a light week that told you
-         to ADD weight to your pull-ups. Bodyweight deloads cut reps instead. */
-      if (cfg.bodyweight && !w) {
-        const reps = Math.max(1, Math.round(cfg.repMax * pct / 100));
-        return {
-          cfg, pct, lastWeight: w,
-          target: { weight: 0, sets: cfg.minSets, reps },
-          label: `Deload · ${cfg.minSets} × ${reps} @ bodyweight`,
-          advice: `Light week — ${reps} reps instead of ${cfg.repMax}. Stop well short of failure.`,
-          action: 'deload'
-        };
-      }
-
-      const target = Math.max(inc, Math.round((w * pct / 100) / inc) * inc);
-
-      return {
-        cfg, pct, lastWeight: w,
-        target: { weight: target, sets: cfg.minSets, reps: cfg.repMin },
-        label: `Deload · ${cfg.minSets} × ${cfg.repMin}${loadSuffix(cfg, target)}`,
-        advice: `Light week — ${pct}% of ${w} kg. Stop well short of failure.`,
-        action: 'deload'
-      };
+      return improved;
     }
 
-    /* A light week is not a plateau, and neither is today's unfinished work —
-       so plateau detection reads the same filtered history as the engine. */
-    function detectPlateau(exName) {
+    /* How many sessions in a row, right up to now, show no progress on this
+       exercise. Purely informational — the app does not act on this number or
+       suggest anything from it; it is shown so you can judge for yourself.
+       Deload sessions and today are already excluded by getProgressionHistory. */
+    function sessionsWithoutProgress(exName) {
       const h = getProgressionHistory(exName);
-      if (h.length < 3) return false;
-      const recent = h.slice(-3);
-      const w = workingWeight(recent[0].sets);
-      if (!recent.every(r => workingWeight(r.sets) === w)) return false;
-      const totals = recent.map(r => r.sets.reduce((sum, s) => sum + s.reps, 0));
-      return totals[2] <= totals[0];
+      let streak = 0;
+      for (let i = 1; i < h.length; i++) {
+        streak = sessionProgressed(h[i], h[i - 1]) ? 0 : streak + 1;
+      }
+      return streak;
     }
 
     let currentChart = null;
@@ -1494,13 +1303,11 @@
     let toastTimer = null;
     let historyPickedProgram = null;
     let openSessionId = null;
-    let workoutModeOverride = null;   // deload/full chosen for today, before a session exists
-    let coachBusy = false;
+    let deloadToggle = false;   // manual deload flag for today, before a session exists
 
     document.addEventListener("DOMContentLoaded", () => {
       migrateData();
       refreshAllUI();
-      loadAiSettingsIntoForm();
 
       document.getElementById('confirm-modal-confirm-btn').addEventListener('click', () => {
         const cb = confirmCallback;
@@ -1606,8 +1413,6 @@
       localStorage.setItem('fit_history', JSON.stringify(window.historyData));
       localStorage.setItem('fit_sessions', JSON.stringify(window.sessions));
       localStorage.setItem('fit_program_order', JSON.stringify(window.programOrder));
-      localStorage.setItem('fit_coach_tips', JSON.stringify(window.coachTips));
-      localStorage.setItem('fit_deload_week', JSON.stringify(window.deloadWeek));
     }
 
     function refreshAllUI() {
@@ -2186,7 +1991,7 @@
       }
 
       optBtn.style.display = 'inline-block';
-      workoutModeOverride = null;   // each program picks its own default for today
+      deloadToggle = false;   // each program starts un-flagged for today
       renderWorkoutSession(selected);
     }
 
@@ -2194,26 +1999,18 @@
       const container = document.getElementById('active-workout-container');
       const entries = window.programs[program].map(normalizeEntry);
       const saved = getTodaySession(program);
-      const mode = getWorkoutMode(program);
-      const week = activeLightWeek();
-      const tips = (window.coachTips.byProgram || {})[program] || null;
+      const deload = isDeloadToday(program);
 
-      let html = sessionHeadHtml(program, saved, mode, week)
-               + lightWeekBannerHtml(program, week, mode)
-               + coachBarHtml(program, tips)
-               + guidanceBannerHtml(tips);
+      let html = sessionHeadHtml(program, saved, deload);
 
       entries.forEach((entry, idx) => {
         const history = getProgressionHistory(entry.name);
-        const plan = mode === 'deload'
-          ? computeDeload(entry, history)
-          : computeProgression(entry, history);
+        const plan = computeProgression(entry, history);
 
         const best = getExerciseBest(entry.name);
         const last = getExerciseHistory(entry.name).filter(h => h.date < todayStr()).pop();
         const savedSets = saved ? ((saved.exercises.find(e => e.name === entry.name) || {}).sets || []) : [];
-        const tip = getCoachTip(program, entry.name);
-        const plateau = mode !== 'deload' && detectPlateau(entry.name);
+        const stuck = sessionsWithoutProgress(entry.name);
 
         const targetWeight = plan.target ? plan.target.weight : '';
         const rowCount = Math.max(savedSets.length, plan.target ? plan.target.sets : entry.minSets, 1);
@@ -2224,7 +2021,7 @@
         }
 
         html += `
-          <div class="card exercise-card${mode === 'deload' ? ' is-deload' : ''}">
+          <div class="card exercise-card${deload ? ' is-deload' : ''}">
             <div class="ex-head">
               <span class="reorder-handle">
                 <button class="btn-icon" ${idx === 0 ? 'disabled' : ''} onclick="moveTrackerExercise('${jsAttr(program)}', ${idx}, -1)" aria-label="Move up">▲</button>
@@ -2234,8 +2031,8 @@
             </div>
 
             <div class="target-line">
-              <span class="target-chip${mode === 'deload' ? ' deload' : ''}">${escapeHtml(plan.label)}</span>
-              ${plateau ? '<span class="target-chip warn">Plateau</span>' : ''}
+              <span class="target-chip">${escapeHtml(plan.label)}</span>
+              ${stuck > 0 ? `<span class="target-chip info">${stuck} session${stuck === 1 ? '' : 's'} without progress</span>` : ''}
             </div>
             <p class="advice">${escapeHtml(plan.advice)}</p>
 
@@ -2243,8 +2040,6 @@
               <span><b>Best:</b> ${best ? `${formatLoad(best.weight, entry.bodyweight)} × ${best.reps} <small>(${formatDate(best.date)})</small>` : '—'}</span>
               <span><b>Last:</b> ${last ? `${escapeHtml(describeSets(last.sets, entry.bodyweight))} <small>(${formatDate(last.date)})</small>` : '—'}</span>
             </div>
-
-            ${tip ? `<div class="coach-tip"><b>Coach:</b> ${escapeHtml(tip)}</div>` : ''}
 
             <div id="sets-box-${idx}" data-target="${targetWeight}" data-bw="${entry.bodyweight ? 1 : 0}">${setRows}</div>
             <button class="btn-add-set" onclick="addSetRowToSession(${idx})">+ Add Set</button>
@@ -2255,7 +2050,7 @@
       container.innerHTML = html;
     }
 
-    function sessionHeadHtml(program, saved, mode, week) {
+    function sessionHeadHtml(program, saved, deload) {
       const setCount = saved ? saved.exercises.reduce((n, e) => n + (e.sets || []).length, 0) : 0;
       return `
         <div class="session-head">
@@ -2263,78 +2058,11 @@
             <span class="session-date">${formatDate(todayStr())}</span>
             <small>${saved ? `${setCount} sets logged today` : 'New session'}</small>
           </div>
+          <label class="deload-toggle">
+            <input type="checkbox" ${deload ? 'checked' : ''} onchange="toggleDeloadToday('${jsAttr(program)}')">
+            Deload
+          </label>
           ${saved ? '<span class="badge-done">Logged</span>' : ''}
-        </div>`;
-    }
-
-    /* The week sets the default, but the day decides. Flipping to a full
-       workout restores the real working weights without cancelling the week. */
-    function lightWeekBannerHtml(program, week, mode) {
-      if (!week) return '';
-
-      if (week.type === 'rest') {
-        return `
-          <div class="coach-banner rest">
-            <strong>Rest week · ${formatDate(week.start)}–${formatDate(week.end)}</strong>
-            <span>${escapeHtml(week.reason || 'The coach suggested a week off.')} Trained anyway? It logs as a normal session.</span>
-            <div class="banner-actions">
-              <button class="chip-btn" onclick="endLightWeek()">Clear</button>
-            </div>
-          </div>`;
-      }
-
-      return `
-        <div class="light-week">
-          <div class="lw-head">
-            <strong>Deload week</strong>
-            <span>${formatDate(week.start)}–${formatDate(week.end)}</span>
-          </div>
-          <div class="mode-toggle" role="group" aria-label="Session type today">
-            <button class="${mode === 'deload' ? 'on' : ''}" onclick="setWorkoutMode('${jsAttr(program)}', 'deload')">Deload</button>
-            <button class="${mode === 'full' ? 'on' : ''}" onclick="setWorkoutMode('${jsAttr(program)}', 'full')">Full workout</button>
-          </div>
-          <div class="lw-foot">
-            <label for="deload-pct">%</label>
-            <input type="number" id="deload-pct" min="40" max="95" step="5" value="${deloadPct()}"
-                   onchange="setDeloadPct(this.value)" aria-label="Deload percentage">
-            <button class="chip-btn" onclick="endLightWeek()">End now</button>
-          </div>
-        </div>`;
-    }
-
-    function coachBarHtml(program, tips) {
-      const fresh = tips && tips.updatedAt ? freshnessLabel(tips.updatedAt) : 'No advice requested yet';
-      return `
-        <div class="coach-bar">
-          <button class="coach-btn" onclick="askCoach('${jsAttr(program)}')" ${coachBusy ? 'disabled' : ''}>
-            ${coachBusy ? 'Analysing…' : 'Ask the coach'}
-          </button>
-          <small>${escapeHtml(fresh)}</small>
-        </div>`;
-    }
-
-    function freshnessLabel(iso) {
-      const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
-      if (days <= 0) return 'Updated today';
-      if (days === 1) return 'Updated yesterday';
-      return `Updated ${days} days ago`;
-    }
-
-    // Deload and rest are recommendations until you accept them.
-    function guidanceBannerHtml(tips) {
-      const g = tips && tips.guidance;
-      if (!g || !g.type || g.type === 'none') return '';
-      if (activeLightWeek()) return '';   // already acted on
-
-      const isRest = g.type === 'rest';
-      return `
-        <div class="coach-banner ${isRest ? 'rest' : 'deload'}">
-          <strong>${isRest ? 'Coach suggests a rest week' : 'Coach suggests a deload'}</strong>
-          <span>${escapeHtml(g.reason || '')}</span>
-          <div class="banner-actions">
-            <button class="chip-btn" onclick="startLightWeek('${isRest ? 'rest' : 'deload'}', 0)">This week</button>
-            <button class="chip-btn" onclick="startLightWeek('${isRest ? 'rest' : 'deload'}', 1)">Next week</button>
-          </div>
         </div>`;
     }
 
@@ -2393,7 +2121,7 @@
           id: `s_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
           program,
           date: todayStr(),
-          deload: getWorkoutMode(program) === 'deload',
+          deload: deloadToggle,
           exercises: []
         };
         window.sessions.push(s);
@@ -2528,7 +2256,6 @@
         return window.showToast('Log at least one set before saving.', true);
       }
 
-      session.deload = getWorkoutMode(program) === 'deload';
       saveLocal();
       renderWorkoutSession(program);
       renderHistoryPrograms();
@@ -2706,390 +2433,6 @@
       });
     }
 
-    const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta';
-
-    function getAiProvider() {
-      return localStorage.getItem('ai_provider') || 'gemini';
-    }
-
-    function onAiProviderChange() {
-      const provider = document.getElementById('ai-provider-select').value;
-      const isGemini = provider === 'gemini';
-      document.getElementById('ai-model-field').style.display = isGemini ? '' : 'none';
-      document.getElementById('ai-endpoint-field').style.display = isGemini ? 'none' : '';
-      document.getElementById('ai-apikey-label').textContent = isGemini ? 'Google AI API Key' : 'API Key (optional)';
-      document.getElementById('ai-key-hint').style.display = isGemini ? '' : 'none';
-    }
-
-    function loadAiSettingsIntoForm() {
-      document.getElementById('ai-provider-select').value = getAiProvider();
-      document.getElementById('ai-endpoint-input').value = localStorage.getItem('ai_endpoint') || '';
-      document.getElementById('ai-apikey-input').value = localStorage.getItem('ai_apikey') || '';
-
-      // Show the saved model right away; the full list is fetched on Test Connection.
-      const savedModel = localStorage.getItem('ai_model');
-      if (savedModel) {
-        const sel = document.getElementById('ai-model-select');
-        sel.innerHTML = `<option value="${escapeHtml(savedModel)}">${escapeHtml(savedModel)}</option>`;
-        sel.value = savedModel;
-      }
-
-      onAiProviderChange();
-    }
-
-    function saveAiSettings() {
-      const provider = document.getElementById('ai-provider-select').value;
-      const apiKey = document.getElementById('ai-apikey-input').value.trim();
-      const endpoint = document.getElementById('ai-endpoint-input').value.trim();
-      const model = document.getElementById('ai-model-select').value;
-
-      if (provider === 'gemini' && !apiKey) return window.showToast('Enter your Google AI API key.', true);
-      if (provider === 'custom' && !endpoint) return window.showToast('Enter an API endpoint URL.', true);
-
-      localStorage.setItem('ai_provider', provider);
-      localStorage.setItem('ai_apikey', apiKey);
-      localStorage.setItem('ai_endpoint', endpoint);
-      if (model) localStorage.setItem('ai_model', model);
-
-      window.showToast('AI settings saved.');
-    }
-
-    async function testAiConnection() {
-      const provider = document.getElementById('ai-provider-select').value;
-      localStorage.setItem('ai_provider', provider);
-      if (provider === 'gemini') return testGeminiConnection();
-      return testCustomConnection();
-    }
-
-    // Model IDs are never hardcoded — Google ships new ones often, so the list is
-    // pulled live with the user's own key and only generateContent models are kept.
-    async function testGeminiConnection() {
-      const apiKey = document.getElementById('ai-apikey-input').value.trim();
-      if (!apiKey) return window.showToast('Enter your Google AI API key first.', true);
-
-      window.showToast('Testing connection...');
-
-      try {
-        const res = await fetch(`${GEMINI_BASE}/models`, { headers: { 'x-goog-api-key': apiKey } });
-
-        if (res.status === 400 || res.status === 401 || res.status === 403) {
-          return window.showToast(`Google rejected the API key (status ${res.status}).`, true);
-        }
-        if (!res.ok) return window.showToast(`Google responded with status ${res.status}.`, true);
-
-        const data = await res.json();
-        const models = (data.models || [])
-          .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
-          .map(m => String(m.name || '').replace(/^models\//, ''))
-          .filter(Boolean);
-
-        if (models.length === 0) {
-          return window.showToast('Key accepted, but no usable models were returned.', true);
-        }
-
-        const sel = document.getElementById('ai-model-select');
-        sel.innerHTML = models.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
-
-        const previous = localStorage.getItem('ai_model');
-        sel.value = models.includes(previous)
-          ? previous
-          : (models.find(m => m.includes('flash')) || models[0]);
-
-        localStorage.setItem('ai_apikey', apiKey);
-        localStorage.setItem('ai_model', sel.value);
-        window.showToast(`Connected! ${models.length} models available — using ${sel.value}.`);
-      } catch (e) {
-        window.showToast('Could not reach Google: ' + e.message, true);
-      }
-    }
-
-    async function testCustomConnection() {
-      const endpoint = document.getElementById('ai-endpoint-input').value.trim();
-      const apiKey = document.getElementById('ai-apikey-input').value.trim();
-      if (!endpoint) return window.showToast('Enter an API endpoint URL first.', true);
-
-      localStorage.setItem('ai_endpoint', endpoint);
-      localStorage.setItem('ai_apikey', apiKey);
-      window.showToast('Testing connection...');
-
-      try {
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          headers: buildCustomHeaders(),
-          body: JSON.stringify({ prompt: 'ping', test: true })
-        });
-
-        if (res.ok) {
-          window.showToast('Connected successfully — your endpoint works!');
-        } else if (res.status === 401 || res.status === 403) {
-          window.showToast(`Reached the server, but the API key was rejected (status ${res.status}).`, true);
-        } else {
-          window.showToast(`Connected, but the API responded with status ${res.status}.`, true);
-        }
-      } catch (e) {
-        window.showToast('Could not reach the AI endpoint: ' + e.message, true);
-      }
-    }
-
-    function buildCustomHeaders() {
-      const apiKey = localStorage.getItem('ai_apikey');
-      const headers = { 'Content-Type': 'application/json' };
-      if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
-      return headers;
-    }
-
-    async function callGemini(prompt, wantJson) {
-      const apiKey = localStorage.getItem('ai_apikey');
-      const model = localStorage.getItem('ai_model');
-      if (!apiKey) throw new Error('Add your Google AI API key in the settings above.');
-      if (!model) throw new Error('Run Test Connection first so a model can be selected.');
-
-      const body = { contents: [{ parts: [{ text: prompt }] }] };
-      if (wantJson) body.generationConfig = { responseMimeType: 'application/json' };
-
-      const res = await fetch(`${GEMINI_BASE}/models/${encodeURIComponent(model)}:generateContent`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-        body: JSON.stringify(body)
-      });
-
-      if (!res.ok) {
-        const detail = await res.text().catch(() => '');
-        throw new Error(`Google responded with status ${res.status}. ${detail.slice(0, 200)}`);
-      }
-
-      const data = await res.json();
-      const parts = data?.candidates?.[0]?.content?.parts;
-      const text = Array.isArray(parts) ? parts.map(p => p.text).filter(Boolean).join('\n') : null;
-
-      if (!text) {
-        const blocked = data?.promptFeedback?.blockReason || data?.candidates?.[0]?.finishReason;
-        throw new Error(blocked ? `Gemini returned no text (${blocked}).` : 'Gemini returned no text.');
-      }
-      return text;
-    }
-
-    async function callCustomEndpoint(prompt) {
-      const endpoint = localStorage.getItem('ai_endpoint');
-      if (!endpoint) throw new Error('Add your API Endpoint URL in the settings above.');
-
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: buildCustomHeaders(),
-        body: JSON.stringify({ prompt: prompt, historyData: window.historyData })
-      });
-
-      if (!res.ok) throw new Error(`API responded with status ${res.status}`);
-
-      const data = await res.json();
-      return data?.text || data?.response || data?.choices?.[0]?.message?.content
-        || (typeof data === 'string' ? data : null)
-        || JSON.stringify(data, null, 2);
-    }
-
-    function getCoachTip(program, exName) {
-      const tips = (window.coachTips.byProgram || {})[program];
-      if (!tips || !Array.isArray(tips.exercises)) return null;
-      const hit = tips.exercises.find(e => e.name === exName);
-      return hit ? hit.detail : null;
-    }
-
-    // Everything the coach needs: the configured scheme, what the deterministic
-    // engine already decided, and the recent sets — so the model reasons about
-    // judgement calls rather than re-deriving arithmetic it would get wrong.
-    function buildCoachPayload(onlyProgram) {
-      const out = [];
-      const names = onlyProgram ? [onlyProgram] : orderedProgramNames();
-      names.forEach(pName => {
-        (window.programs[pName] || []).map(normalizeEntry).forEach(entry => {
-          const history = getProgressionHistory(entry.name);
-          if (!history.length) return;
-          const prog = computeProgression(entry, history);
-          out.push({
-            program: pName,
-            exercise: entry.name,
-            scheme: entry.scheme,
-            bodyweight: !!entry.bodyweight,
-            canAddLoad: !entry.bodyweight || entry.increment > 0,
-            setsRange: entry.scheme === 'triple' ? [entry.minSets, entry.maxSets] : [entry.minSets, entry.minSets],
-            repRange: [entry.repMin, entry.repMax],
-            incrementKg: entry.increment,
-            engineSuggestion: prog.action || 'start',
-            plateau: detectPlateau(entry.name),
-            recentSessions: history.slice(-6).map(h => ({ date: h.date, sets: h.sets }))
-          });
-        });
-      });
-      return out;
-    }
-
-    const COACH_SCHEMA_HINT = `Return ONLY JSON matching:
-{
-  "overall": "2-3 sentence summary",
-  "guidance": { "type": "deload" | "rest" | "none", "reason": "short reason" },
-  "exercises": [
-    { "name": "<exact exercise name, copied verbatim from the data>",
-      "action": "increase_weight" | "add_set" | "add_reps" | "dropset" | "swap" | "hold",
-      "detail": "one short actionable sentence" }
-  ]
-}`;
-
-    const COACH_PROMPT_HEAD = `You are an elite strength & hypertrophy coach guiding a lifter who trains with Double Progression and Triple Progression.
-
-Double Progression: keep the same weight until every set reaches the top of the rep range, then add weight and restart at the bottom of the range.
-Triple Progression: same, but when every set reaches the top of the range, first add a set (up to the max), and only once the max set count is also at the top of the range does the weight go up.
-
-A deterministic engine already computed the routine next step for each exercise ("engineSuggestion"), and the app computes deload loads itself. Do not do arithmetic and do not propose specific weights — focus on judgement:
-- when a lifter is stalling and should add a set (moving Double toward Triple),
-- when to finish an exercise with a drop set for extra intensity,
-- when an exercise has stopped working and should be swapped,
-- when accumulated fatigue calls for a deload week ("deload") or a full rest week ("rest").
-
-For an exercise marked "bodyweight", the weight figure is added load from a belt or vest, and 0 means pure bodyweight. When "canAddLoad" is false the lifter cannot add load at all, so never suggest adding weight there — suggest more reps, more sets, a harder variation, or slower tempo instead.
-
-An "engineSuggestion" of "complete_sets" means the lifter is performing fewer sets than their programme calls for and every set they did reached the top of the rep range, so the weight cannot rise until the missing sets are done. Address the missing sets — schedule, time, fatigue, or lowering the planned set count — rather than telling them to add reps they are already maxing.`;
-
-    // Called from the workout screen, scoped to the program being trained.
-    async function askCoach(program) {
-      if (coachBusy) return;
-      const payload = buildCoachPayload(program);
-      if (!payload.length) {
-        return window.showToast('Not enough history in this workout to analyse yet.', true);
-      }
-
-      coachBusy = true;
-      renderWorkoutSession(program);
-      window.showToast('Asking the coach…');
-
-      try {
-        const advice = await requestCoachAdvice(payload);
-        if (!advice) throw new Error('Could not read the response.');
-        advice.updatedAt = new Date().toISOString();
-        window.coachTips.byProgram[program] = advice;
-        saveLocal();
-        window.showToast('Advice updated.');
-      } catch (e) {
-        window.showToast('Could not get advice: ' + e.message, true);
-      } finally {
-        coachBusy = false;
-        renderWorkoutSession(program);
-      }
-    }
-
-    async function requestCoachAdvice(payload) {
-      const prompt = `${COACH_PROMPT_HEAD}
-
-Training data:
-${JSON.stringify(payload, null, 2)}
-
-${COACH_SCHEMA_HINT}`;
-
-      const raw = getAiProvider() === 'gemini'
-        ? await callGemini(prompt, true)
-        : await callCustomEndpoint(prompt);
-      return parseCoachJson(raw);
-    }
-
-    // The AI Coach screen keeps a whole-training-plan view across all programs.
-    async function runAiAnalysis() {
-      const payload = buildCoachPayload(null);
-      if (!payload.length) return window.showToast('Log a few workouts first so there is data to analyse.', true);
-
-      const card = document.getElementById('ai-response-card');
-      const textEl = document.getElementById('ai-response-text');
-      card.style.display = 'block';
-      textEl.innerText = 'Analysing your workouts and progress…';
-
-      try {
-        const advice = await requestCoachAdvice(payload);
-        if (!advice) { textEl.innerText = 'Could not read the coach response.'; return; }
-
-        advice.updatedAt = new Date().toISOString();
-        // Fan the advice out to each program so it also shows inside the workout.
-        orderedProgramNames().forEach(pName => {
-          const forProgram = (advice.exercises || []).filter(e =>
-            (window.programs[pName] || []).some(x => normalizeEntry(x).name === e.name));
-          if (forProgram.length) {
-            window.coachTips.byProgram[pName] = { ...advice, exercises: forProgram };
-          }
-        });
-
-        saveLocal();
-        renderCoachSummary(advice, textEl);
-        const program = currentProgram();
-        if (program && window.programs[program]) renderWorkoutSession(program);
-        window.showToast('Advice updated — tips now show inside your workout.');
-      } catch (e) {
-        textEl.innerText = 'Error connecting to the coach: ' + e.message;
-      }
-    }
-
-    // Models sometimes wrap JSON in code fences or prose; recover the object.
-    function parseCoachJson(raw) {
-      if (!raw) return null;
-      const attempts = [raw];
-      const fenced = String(raw).match(/```(?:json)?\s*([\s\S]*?)```/);
-      if (fenced) attempts.push(fenced[1]);
-      const braced = String(raw).match(/\{[\s\S]*\}/);
-      if (braced) attempts.push(braced[0]);
-
-      for (const a of attempts) {
-        try {
-          const obj = JSON.parse(a);
-          if (obj && (obj.overall || obj.exercises || obj.guidance || obj.deload)) return normalizeAdvice(obj);
-        } catch (e) { /* try the next shape */ }
-      }
-      return null;
-    }
-
-    // Accept the older {deload:{recommended}} shape as well as {guidance:{type}}.
-    function normalizeAdvice(obj) {
-      if (!obj.guidance && obj.deload) {
-        obj.guidance = { type: obj.deload.recommended ? 'deload' : 'none', reason: obj.deload.reason || '' };
-      }
-      if (obj.guidance && !['deload', 'rest', 'none'].includes(obj.guidance.type)) {
-        obj.guidance.type = 'none';
-      }
-      return obj;
-    }
-
-    const ACTION_LABEL = {
-      increase_weight: 'Add weight',
-      add_set: 'Add a set',
-      add_reps: 'Add reps',
-      complete_sets: 'Finish your sets',
-      raise_range: 'Raise the rep range',
-      dropset: 'Finish with a drop set',
-      swap: 'Swap exercise',
-      hold: 'Hold steady'
-    };
-
-    function renderCoachSummary(tips, el) {
-      let html = '';
-      if (tips.overall) html += `<p style="margin-bottom:12px;">${escapeHtml(tips.overall)}</p>`;
-
-      const g = tips.guidance;
-      if (g && g.type && g.type !== 'none') {
-        const isRest = g.type === 'rest';
-        html += `<div class="coach-banner ${isRest ? 'rest' : 'deload'}" style="margin-bottom:12px;">
-                   <strong>${isRest ? 'Rest week recommended' : 'Deload recommended'}</strong>
-                   <span>${escapeHtml(g.reason || '')}</span>
-                   <div class="banner-actions">
-                     <button class="chip-btn" onclick="startLightWeek('${isRest ? 'rest' : 'deload'}', 0)">This week</button>
-                     <button class="chip-btn" onclick="startLightWeek('${isRest ? 'rest' : 'deload'}', 1)">Next week</button>
-                   </div>
-                 </div>`;
-      }
-
-      if (Array.isArray(tips.exercises) && tips.exercises.length) {
-        html += tips.exercises.map(e => `
-          <div class="coach-row">
-            <span class="action-chip action-${escapeHtml(e.action || 'hold')}">${escapeHtml(ACTION_LABEL[e.action] || e.action || 'Note')}</span>
-            <span><b>${escapeHtml(e.name || '')}</b> — ${escapeHtml(e.detail || '')}</span>
-          </div>`).join('');
-      }
-      el.innerHTML = html || 'No advice returned.';
-    }
 
     function populateAnalyticsPicker() {
       const picker = document.getElementById('analytics-picker');
