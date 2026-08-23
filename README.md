@@ -94,6 +94,20 @@ Three consecutive sessions at the same working weight with no improvement in tot
 reps flags the exercise as **Plateau**. That's the signal the AI coach uses to
 suggest adding a set, a drop set, or a different exercise.
 
+### If you do more or fewer sets than planned
+
+The engine reads the sets you actually performed, not the number you configured.
+
+**More.** Do a third set on a two-set exercise and that becomes the plan, so all
+three then need to reach the ceiling before the weight moves. Reach it on all
+three and the weight goes up and the plan returns to two.
+
+**Fewer.** The weight only rises once you've done at least the configured number
+of sets. Do two of three, both at the top of the range, and the weight stays put —
+so the app says exactly that: *"You did 2 of 3 sets, all at 10. Complete 1 more set
+at 10 reps to move up to 55 kg."* It won't tell you to beat a rep count you're
+already maxing.
+
 ---
 
 ## Deload and rest weeks
@@ -205,22 +219,55 @@ are cached best-effort, so an unreachable CDN can't stop the worker installing.
 | Muscles & Exercises | Manage the exercise database |
 | Workout History | Browse and edit past sessions |
 | AI Coach | Provider settings and a full-plan analysis |
-| Analytics | Max weight over time, per exercise |
-| Cloud & Account | Firebase sync — **not configured**, see below |
+| Analytics | Progress over time, per exercise |
+
+---
+
+## Security
+
+The app is a static page with no backend, so there is no server to break into and
+nothing of yours on anyone else's machine. Two things were checked directly:
+
+- **Your API key stays yours.** It is written only to `localStorage`, sent only to
+  the provider you configured, and passed as a request header rather than in a URL
+  — URLs leak into logs and history. It is not in cookies, and not in the offline
+  cache.
+- **Injection.** Exercise names, program names and AI replies are all rendered as
+  HTML, so they are escaped for quotes as well as angle brackets. An earlier
+  version escaped only the latter, which let a quote in a name close an attribute
+  and inject an event handler; that is fixed and tested with the same payloads.
+
+A Content Security Policy backs this up: `connect-src` limits outbound requests to
+Google, so even a future scripting bug could not post your key elsewhere, and
+`img-src` blocks beacon exfiltration.
+
+Publishing the code changes none of this — there are no keys in the repository or
+its history, and anyone opening the site gets their own empty storage. What the
+app cannot protect against is someone holding your unlocked phone; that is your
+device passcode's job.
+
+> Adding a custom AI endpoint on another domain means adding that domain to
+> `connect-src` in the CSP.
 
 ---
 
 ## Known limitations
 
-- **No data export or backup.** Clearing site data loses everything.
-- **Cloud sync is inactive.** The Firebase code is present but its credentials are
-  placeholders, so the Cloud screen does nothing. The page still loads two Firebase
-  modules on every visit and fails quietly — harmless, but wasted requests.
+- **No data export or backup.** Everything lives in this browser's storage.
+  Clearing site data, or losing the phone, loses your history. This is the
+  biggest gap in the app.
+- **No cloud sync.** There was a Firebase screen that never had working
+  credentials; it was removed rather than left as dead UI. Nothing syncs
+  anywhere.
 - **The AI path has not been exercised against the live Google API.** Request
   shape, response parsing and stall detection are verified against recorded
   Google-format responses; real-world answer quality is unverified.
 - **Not tested on a physical iPhone.** Verified in Chromium at iPhone viewport size.
-- **No automated tests in CI.** Changes are verified manually in a browser.
+- **The progress chart needs one online visit.** Its library comes from a CDN. Open
+  the Analytics screen once with a connection and it is cached for offline use;
+  until then that screen says so instead of failing.
+- **No automated tests in CI.** Changes are verified in a scripted browser, but
+  nothing runs them on a push.
 
 ---
 

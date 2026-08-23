@@ -11,11 +11,11 @@
        another domain means adding that domain here. -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
-    script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.gstatic.com;
+    script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src 'self' https://fonts.gstatic.com;
     img-src 'self' data:;
-    connect-src 'self' https://*.googleapis.com https://*.firebaseio.com;
+    connect-src 'self' https://generativelanguage.googleapis.com;
     object-src 'none';
     base-uri 'self';
     form-action 'none'">
@@ -86,16 +86,21 @@
       padding-bottom: 14px;
       padding-left: 16px;
       padding-right: 16px;
-      display: flex;
+      /* Three columns keep the brand centred now that the sync badge that used
+         to balance the menu button is gone. Grid items stretch by default, so
+         the menu button is pinned to the start — otherwise it fills its column
+         and centres its own icon, leaving the ☰ adrift mid-header. */
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
       align-items: center;
-      justify-content: space-between;
       border-bottom: 1px solid var(--border);
       position: sticky;
       top: 0;
       z-index: 100;
     }
 
-    .brand { display: flex; align-items: center; gap: 10px; }
+    header > .icon-btn { justify-self: start; }
+    .brand { display: flex; align-items: center; gap: 10px; justify-self: center; }
 
     .brand h1 {
       font-family: var(--font-display);
@@ -126,19 +131,6 @@
     .icon-btn:hover { background: var(--bg-input); }
     .icon-btn svg { width: 22px; height: 22px; }
 
-    #auth-status-indicator {
-      font-size: 0.72rem;
-      font-weight: 600;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-      color: var(--text-sub);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    #auth-status-indicator .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-sub); flex-shrink: 0; }
-    #auth-status-indicator.synced { color: var(--success); }
-    #auth-status-indicator.synced .dot { background: var(--success); box-shadow: 0 0 6px var(--success); }
 
     .sidebar-overlay {
       position: fixed;
@@ -582,7 +574,6 @@
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--accent)"><rect x="1" y="9" width="3" height="6" rx="0.5" fill="currentColor" stroke="none"/><rect x="4" y="7" width="2.5" height="10" rx="0.5" fill="currentColor" stroke="none"/><line x1="6.5" y1="12" x2="17.5" y2="12"/><rect x="17" y="7" width="2.5" height="10" rx="0.5" fill="currentColor" stroke="none"/><rect x="20" y="9" width="3" height="6" rx="0.5" fill="currentColor" stroke="none"/></svg>
       <h1>10<span>Fit</span></h1>
     </div>
-    <div id="auth-status-indicator"><span class="dot"></span><span id="auth-status-text">Local</span></div>
   </header>
 
   <div id="sidebar-overlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
@@ -617,10 +608,6 @@
       <li class="nav-item" data-view="analytics" onclick="navigate('analytics', this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="20" x2="20" y2="20"/><rect x="6" y="12" width="3" height="8"/><rect x="11" y="7" width="3" height="13"/><rect x="16" y="14" width="3" height="6"/></svg>
         Analytics
-      </li>
-      <li class="nav-item" data-view="cloud" onclick="navigate('cloud', this)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 18a4 4 0 0 1-1-7.9A5 5 0 0 1 15.5 8a4.5 4.5 0 0 1 .5 9H7Z"/></svg>
-        Cloud & Account
       </li>
     </ul>
   </aside>
@@ -803,23 +790,13 @@
         <div class="chart-container">
           <canvas id="progressChart"></canvas>
         </div>
-      </div>
-    </section>
-
-    <section id="view-cloud" class="view-section">
-      <div id="auth-box" class="card">
-        <h3>Cloud Sync</h3>
-        <p class="hint">Sign in to back up your programs and history and access them on any device.</p>
-        <label>Email</label>
-        <input type="email" id="cloud-email" placeholder="you@example.com">
-        <label>Password</label>
-        <input type="password" id="cloud-pass" placeholder="••••••••">
-        <div style="display: flex; gap: 8px;">
-          <button class="btn-primary" style="margin-bottom:0;" onclick="loginCloud()">Log In</button>
-          <button class="btn-secondary" style="margin-bottom:0;" onclick="registerCloud()">Sign Up</button>
+        <div id="chart-unavailable" class="empty-state" style="display:none;">
+          The chart library could not load. Open this screen once with a connection
+          and it will work offline afterwards.
         </div>
       </div>
     </section>
+
   </main>
 
   <div id="program-modal" class="modal-overlay" onclick="if(event.target===this) closeProgramModal()">
@@ -974,105 +951,6 @@
     }
   </script>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "YOUR_FIREBASE_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
-    };
-
-    let auth, db;
-    window.currentUser = null;
-
-    try {
-      const app = initializeApp(firebaseConfig);
-      auth = getAuth(app);
-      db = getFirestore(app);
-
-      onAuthStateChanged(auth, async (user) => {
-        const indicator = document.getElementById('auth-status-indicator');
-        const text = document.getElementById('auth-status-text');
-        if (user) {
-          window.currentUser = user;
-          text.innerText = 'Cloud Synced';
-          indicator.classList.add('synced');
-          await window.loadCloudData();
-        } else {
-          window.currentUser = null;
-          text.innerText = 'Local Mode';
-          indicator.classList.remove('synced');
-        }
-      });
-    } catch (e) {
-      console.warn('Firebase not configured yet — running in local-only mode.', e);
-    }
-
-    window.loginCloud = async () => {
-      if (!auth) return window.showToast('Cloud sync is not configured yet.', true);
-      const email = document.getElementById('cloud-email').value.trim();
-      const pass = document.getElementById('cloud-pass').value;
-      if (!email || !pass) return window.showToast('Enter an email and password.', true);
-      try {
-        await signInWithEmailAndPassword(auth, email, pass);
-        window.showToast('Logged in successfully.');
-      } catch (e) { window.showToast('Login failed: ' + e.message, true); }
-    };
-
-    window.registerCloud = async () => {
-      if (!auth) return window.showToast('Cloud sync is not configured yet.', true);
-      const email = document.getElementById('cloud-email').value.trim();
-      const pass = document.getElementById('cloud-pass').value;
-      if (!email || !pass) return window.showToast('Enter an email and password.', true);
-      try {
-        await createUserWithEmailAndPassword(auth, email, pass);
-        window.showToast('Account created successfully.');
-      } catch (e) { window.showToast('Sign up failed: ' + e.message, true); }
-    };
-
-    window.syncToCloud = async () => {
-      if (!window.currentUser || !db) return;
-      try {
-        await setDoc(doc(db, "users", window.currentUser.uid), {
-          exercises: window.exerciseDb,
-          programs: window.programs,
-          history: window.historyData,
-          sessions: window.sessions,
-          programOrder: window.programOrder,
-          coachTips: window.coachTips || null,
-          deloadWeek: window.deloadWeek || null
-        });
-      } catch (e) { console.error("Sync error: ", e); }
-    };
-
-    window.loadCloudData = async () => {
-      if (!window.currentUser || !db) return;
-      try {
-        const docRef = doc(db, "users", window.currentUser.uid);
-        const snap = await getDoc(docRef);
-        if (snap.exists()) {
-          const data = snap.data();
-          window.exerciseDb = data.exercises || window.exerciseDb;
-          window.programs = data.programs || window.programs;
-          window.historyData = data.history || window.historyData;
-          if (data.sessions) window.sessions = data.sessions;
-          if (data.programOrder) window.programOrder = data.programOrder;
-          if (data.coachTips !== undefined) window.coachTips = data.coachTips;
-          if (data.deloadWeek !== undefined) window.deloadWeek = data.deloadWeek;
-          // Re-run migration so a backup written by an older version is upgraded.
-          window.migrateData && window.migrateData();
-          saveLocal(true);
-          refreshAllUI();
-        }
-      } catch (e) { console.error("Cloud load error: ", e); }
-    };
-  </script>
 
   <script>
     const defaultExercises = [
@@ -1721,7 +1599,7 @@
       window.historyData = out;
     }
 
-    function saveLocal(skipCloudSync) {
+    function saveLocal() {
       rebuildHistoryData();
       localStorage.setItem('fit_ex_db', JSON.stringify(window.exerciseDb));
       localStorage.setItem('fit_programs', JSON.stringify(window.programs));
@@ -1730,7 +1608,6 @@
       localStorage.setItem('fit_program_order', JSON.stringify(window.programOrder));
       localStorage.setItem('fit_coach_tips', JSON.stringify(window.coachTips));
       localStorage.setItem('fit_deload_week', JSON.stringify(window.deloadWeek));
-      if (!skipCloudSync && window.syncToCloud) window.syncToCloud();
     }
 
     function refreshAllUI() {
@@ -3235,6 +3112,21 @@ ${COACH_SCHEMA_HINT}`;
 
       if (currentChart) { currentChart.destroy(); currentChart = null; }
       if (!exName || !window.historyData[exName]) return;
+
+      /* The charting library comes from a CDN, so it can be missing offline
+         before it has been cached. Say so instead of throwing and leaving the
+         screen broken — the rest of the app works fine without it. The canvas
+         is only hidden, never replaced, so the chart still draws once the
+         library is available. */
+      const missing = document.getElementById('chart-unavailable');
+      const chartBox = ctx.canvas.parentElement;
+      if (typeof Chart === 'undefined') {
+        chartBox.style.display = 'none';
+        missing.style.display = '';
+        return;
+      }
+      chartBox.style.display = '';
+      missing.style.display = 'none';
 
       const recs = window.historyData[exName];
       const labels = recs.map(e => e.date);
