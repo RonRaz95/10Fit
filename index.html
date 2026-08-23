@@ -17,7 +17,9 @@
 
   <title>10Fit - Pro Gym Companion</title>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Deferred: only the Analytics chart needs it, so a slow CDN must not
+       block the app from loading. -->
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 

@@ -135,9 +135,11 @@ iOS has no automatic install prompt — Safari doesn't fire `beforeinstallprompt
 so the manual route is the only route. Once added, it opens fullscreen with no
 address bar.
 
-> **Updating an installed copy:** the service worker serves the cached version
-> first. After deploying changes, remove the app from your home screen and re-add
-> it, or you'll keep seeing the old build.
+> **Updating an installed copy:** just open the app. The HTML is fetched
+> network-first, so a deployed change lands on the next launch with a
+> connection, and the cached copy is used only when the network is unavailable.
+> Never delete and re-add the app to force an update — on iOS that takes your
+> saved history with it.
 
 ### Connecting the AI coach (optional)
 
