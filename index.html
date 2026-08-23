@@ -1510,11 +1510,35 @@
       }
 
       const lowest = Math.min(...topSets.map(s => s.reps));
+      const shortBy = cfg.minSets - setCount;
+
+      /* Fewer sets than planned, every one of them at the ceiling: the weight
+         cannot rise until the missing sets are done. Telling the lifter to
+         "beat 10, 10" when 10 is the ceiling is advice they cannot act on, so
+         name the real blocker instead. */
+      if (shortBy > 0 && topSets.every(s => s.reps >= cfg.repMax)) {
+        const next = Math.round((w + cfg.increment) * 100) / 100;
+        const unlock = (cfg.bodyweight && !(cfg.increment > 0))
+          ? 'to move on'
+          : `to move up to ${next} kg`;
+        return {
+          cfg, lastWeight: w,
+          target: { weight: w, sets: cfg.minSets, reps: cfg.repMax },
+          label: `${cfg.minSets} sets × ${cfg.repMin}–${cfg.repMax}${loadSuffix(cfg, w)}`,
+          advice: `You did ${setCount} of ${cfg.minSets} sets, all at ${cfg.repMax}. `
+                + `Complete ${shortBy} more set${shortBy === 1 ? '' : 's'} at ${cfg.repMax} reps ${unlock}.`,
+          action: 'complete_sets'
+        };
+      }
+
       return {
         cfg, lastWeight: w,
         target: { weight: w, sets: Math.max(setCount, cfg.minSets), reps: Math.min(lowest + 1, cfg.repMax) },
         label: `${Math.max(setCount, cfg.minSets)} sets × ${cfg.repMin}–${cfg.repMax}${loadSuffix(cfg, w)}`,
-        advice: `${cfg.bodyweight && !w ? 'Stay at bodyweight' : `Stay at ${w} kg`} and add reps — beat ${topSets.map(s => s.reps).join(', ')}.`,
+        advice: shortBy > 0
+          ? `${cfg.bodyweight && !w ? 'Stay at bodyweight' : `Stay at ${w} kg`} — you did ${setCount} of ${cfg.minSets} sets. `
+            + `Complete all ${cfg.minSets} and beat ${topSets.map(s => s.reps).join(', ')}.`
+          : `${cfg.bodyweight && !w ? 'Stay at bodyweight' : `Stay at ${w} kg`} and add reps — beat ${topSets.map(s => s.reps).join(', ')}.`,
         action: 'add_reps'
       };
     }
@@ -3044,7 +3068,9 @@ A deterministic engine already computed the routine next step for each exercise 
 - when an exercise has stopped working and should be swapped,
 - when accumulated fatigue calls for a deload week ("deload") or a full rest week ("rest").
 
-For an exercise marked "bodyweight", the weight figure is added load from a belt or vest, and 0 means pure bodyweight. When "canAddLoad" is false the lifter cannot add load at all, so never suggest adding weight there — suggest more reps, more sets, a harder variation, or slower tempo instead.`;
+For an exercise marked "bodyweight", the weight figure is added load from a belt or vest, and 0 means pure bodyweight. When "canAddLoad" is false the lifter cannot add load at all, so never suggest adding weight there — suggest more reps, more sets, a harder variation, or slower tempo instead.
+
+An "engineSuggestion" of "complete_sets" means the lifter is performing fewer sets than their programme calls for and every set they did reached the top of the rep range, so the weight cannot rise until the missing sets are done. Address the missing sets — schedule, time, fatigue, or lowering the planned set count — rather than telling them to add reps they are already maxing.`;
 
     // Called from the workout screen, scoped to the program being trained.
     async function askCoach(program) {
@@ -3154,6 +3180,8 @@ ${COACH_SCHEMA_HINT}`;
       increase_weight: 'Add weight',
       add_set: 'Add a set',
       add_reps: 'Add reps',
+      complete_sets: 'Finish your sets',
+      raise_range: 'Raise the rep range',
       dropset: 'Finish with a drop set',
       swap: 'Swap exercise',
       hold: 'Hold steady'
