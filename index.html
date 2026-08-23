@@ -401,6 +401,88 @@
     }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     #toast.error { border-color: var(--danger); }
+
+    /* ---- reordering rows ---- */
+    .reorder-row { display: flex; align-items: center; gap: 8px; }
+    .reorder-handle { display: flex; flex-direction: column; gap: 1px; flex-shrink: 0; }
+    .reorder-handle .btn-icon { padding: 1px 6px; font-size: 0.7rem; line-height: 1.1; }
+    .reorder-handle .btn-icon[disabled] { opacity: 0.25; cursor: default; }
+    .reorder-label { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+    .reorder-label small { color: var(--text-sub); font-size: 0.72rem; }
+    .reorder-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+
+    .tappable { cursor: pointer; }
+    .tappable:hover { border: 1px solid var(--accent-dim); }
+    .chev { color: var(--text-sub); font-size: 1.3rem; flex-shrink: 0; }
+
+    .crumb { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .crumb .btn-icon { font-size: 1.2rem; }
+
+    /* ---- workout session ---- */
+    .session-head {
+      display: flex; justify-content: space-between; align-items: center;
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px 16px; margin-bottom: 14px;
+    }
+    .session-date { font-family: var(--font-display); font-size: 1.05rem; letter-spacing: 0.03em; }
+    .session-head small { display: block; color: var(--text-sub); font-size: 0.75rem; margin-top: 2px; }
+    .badge-done {
+      background: rgba(82,199,133,0.14); color: var(--success);
+      border: 1px solid var(--success); border-radius: 20px;
+      padding: 3px 12px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+    }
+
+    .exercise-card .ex-head, .session-ex .ex-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .exercise-card .ex-head h3, .session-ex .ex-head h3 { margin: 0; }
+
+    .target-line { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+    .target-chip {
+      background: rgba(232,163,61,0.12); color: var(--accent);
+      border: 1px solid var(--accent-dim); border-radius: 6px;
+      padding: 3px 9px; font-size: 0.74rem; font-weight: 700;
+    }
+    .target-chip.warn { background: rgba(239,91,91,0.12); color: var(--danger); border-color: var(--danger); }
+
+    .advice { font-size: 0.82rem; color: var(--text-sub); line-height: 1.45; margin-bottom: 8px; }
+
+    .pr-line {
+      display: flex; flex-direction: column; gap: 3px;
+      background: var(--bg-input); border-radius: 8px; padding: 8px 10px;
+      font-size: 0.78rem; color: var(--text-sub); margin-bottom: 10px;
+    }
+    .pr-line b { color: var(--text); font-weight: 700; }
+    .pr-line small { opacity: 0.75; }
+
+    .coach-tip {
+      background: rgba(139,123,255,0.1); border: 1px solid var(--violet);
+      border-radius: 8px; padding: 8px 10px; font-size: 0.8rem;
+      color: #e7e3ff; line-height: 1.45; margin-bottom: 10px;
+    }
+    .coach-tip b { color: var(--violet); }
+
+    .coach-banner {
+      display: flex; flex-direction: column; gap: 3px;
+      border-radius: 10px; padding: 12px 14px; margin-bottom: 14px;
+      background: rgba(239,91,91,0.1); border: 1px solid var(--danger);
+      font-size: 0.84rem; line-height: 1.45;
+    }
+    .coach-banner strong { color: var(--danger); text-transform: uppercase; font-size: 0.76rem; letter-spacing: 0.04em; }
+
+    .coach-row { display: flex; align-items: flex-start; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; line-height: 1.45; }
+    .coach-row:last-child { border-bottom: none; }
+    .action-chip {
+      flex-shrink: 0; border-radius: 6px; padding: 2px 8px;
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+      background: var(--bg-input); color: var(--text-sub); border: 1px solid var(--border);
+    }
+    .action-chip.action-increase_weight { background: rgba(82,199,133,0.14); color: var(--success); border-color: var(--success); }
+    .action-chip.action-add_set { background: rgba(232,163,61,0.14); color: var(--accent); border-color: var(--accent-dim); }
+    .action-chip.action-swap, .action-chip.action-dropset { background: rgba(139,123,255,0.14); color: var(--violet); border-color: var(--violet); }
+
+    /* A logged set stays visible and editable instead of being cleared. */
+    .set-row.done input { border-color: var(--success); background: rgba(82,199,133,0.07); }
+    .set-row.done span { color: var(--success); font-weight: 700; }
+    .set-row:has(> button) { grid-template-columns: 52px 1fr 1fr auto; }
   </style>
 </head>
 <body>
@@ -440,6 +522,10 @@
       <li class="nav-item" data-view="ai" onclick="navigate('ai', this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="8" width="16" height="12" rx="3"/><circle cx="9" cy="14" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="14" r="1.4" fill="currentColor" stroke="none"/><line x1="12" y1="8" x2="12" y2="4"/><circle cx="12" cy="3" r="1" fill="currentColor" stroke="none"/></svg>
         AI Coach
+      </li>
+      <li class="nav-item" data-view="history" onclick="navigate('history', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+        Workout History
       </li>
       <li class="nav-item" data-view="analytics" onclick="navigate('analytics', this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="20" x2="20" y2="20"/><rect x="6" y="12" width="3" height="8"/><rect x="11" y="7" width="3" height="13"/><rect x="16" y="14" width="3" height="6"/></svg>
@@ -506,6 +592,7 @@
           <button class="btn-secondary" style="width: auto; padding: 0 16px;" onclick="addExerciseToProgramBuilder()">Add</button>
         </div>
 
+        <p class="hint" style="margin-top:8px;">Use ▲▼ to set the order, and ⚙ to set the progression scheme, sets and rep range.</p>
         <div id="selected-exercises-list" style="margin: 12px 0;"></div>
         <button class="btn-primary" onclick="saveCustomProgram()">Save Program</button>
       </div>
@@ -588,6 +675,36 @@
       <div id="ai-response-card" class="card" style="display: none;">
         <h3>AI Coach Recommendations</h3>
         <div id="ai-response-text" class="ai-box"></div>
+      </div>
+    </section>
+
+    <section id="view-history" class="view-section">
+      <div id="history-step-programs" class="card">
+        <h3>Workout History</h3>
+        <p class="hint">Pick a workout to see every date you performed it.</p>
+        <div id="history-programs-list"></div>
+      </div>
+
+      <div id="history-step-dates" class="card" style="display:none;">
+        <div class="crumb">
+          <button class="btn-icon" onclick="historyBackToPrograms()" aria-label="Back">←</button>
+          <h3 id="history-dates-title" style="margin:0;"></h3>
+        </div>
+        <p class="hint">Tap a date to open that session and edit it.</p>
+        <div id="history-dates-list"></div>
+      </div>
+
+      <div id="history-step-session" class="card" style="display:none;">
+        <div class="crumb">
+          <button class="btn-icon" onclick="historyBackToDates()" aria-label="Back">←</button>
+          <h3 id="history-session-title" style="margin:0;"></h3>
+        </div>
+        <p class="hint">Fix any mistakes in weights, reps or exercise order, then save.</p>
+        <div id="history-session-body"></div>
+        <div style="display:flex; gap:8px; margin-top:12px;">
+          <button class="btn-primary" style="margin-bottom:0;" onclick="saveOpenSession()">Save Changes</button>
+          <button class="btn-danger" style="margin-bottom:0;" onclick="deleteOpenSession()">Delete Session</button>
+        </div>
       </div>
     </section>
 
@@ -683,6 +800,50 @@
         <button class="btn-primary" style="margin-bottom:0;" onclick="saveExerciseModalChanges()">Save Changes</button>
         <button class="btn-danger" style="margin-bottom:0;" onclick="deleteExerciseFromModal()">Delete</button>
       </div>
+    </div>
+  </div>
+
+  <div id="scheme-modal" class="modal-overlay" onclick="if(event.target===this) closeSchemeModal()">
+    <div class="modal-content" style="max-width: 420px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h3 id="scheme-modal-title" style="margin:0;">Progression</h3>
+        <button class="icon-btn" onclick="closeSchemeModal()" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <label>Scheme</label>
+      <select id="scheme-type" onchange="onSchemeTypeChange()">
+        <option value="double">Double Progression (reps → weight)</option>
+        <option value="triple">Triple Progression (reps → sets → weight)</option>
+      </select>
+
+      <div style="display:flex; gap:8px;">
+        <div style="flex:1;">
+          <label>Starting Sets</label>
+          <input type="number" id="scheme-min-sets" min="1" inputmode="numeric">
+        </div>
+        <div style="flex:1;" id="scheme-max-sets-field">
+          <label>Max Sets</label>
+          <input type="number" id="scheme-max-sets" min="1" inputmode="numeric">
+        </div>
+      </div>
+
+      <div style="display:flex; gap:8px;">
+        <div style="flex:1;">
+          <label>Min Reps</label>
+          <input type="number" id="scheme-rep-min" min="1" inputmode="numeric">
+        </div>
+        <div style="flex:1;">
+          <label>Max Reps</label>
+          <input type="number" id="scheme-rep-max" min="1" inputmode="numeric">
+        </div>
+      </div>
+
+      <label>Weight Step (kg)</label>
+      <input type="number" id="scheme-increment" step="0.5" min="0.5" inputmode="decimal">
+
+      <button class="btn-primary" style="margin-bottom:0;" onclick="saveSchemeChanges()">Save Progression</button>
     </div>
   </div>
 
@@ -787,7 +948,10 @@
         await setDoc(doc(db, "users", window.currentUser.uid), {
           exercises: window.exerciseDb,
           programs: window.programs,
-          history: window.historyData
+          history: window.historyData,
+          sessions: window.sessions,
+          programOrder: window.programOrder,
+          coachTips: window.coachTips || null
         });
       } catch (e) { console.error("Sync error: ", e); }
     };
@@ -802,6 +966,11 @@
           window.exerciseDb = data.exercises || window.exerciseDb;
           window.programs = data.programs || window.programs;
           window.historyData = data.history || window.historyData;
+          if (data.sessions) window.sessions = data.sessions;
+          if (data.programOrder) window.programOrder = data.programOrder;
+          if (data.coachTips !== undefined) window.coachTips = data.coachTips;
+          // Re-run migration so a backup written by an older version is upgraded.
+          window.migrateData && window.migrateData();
           saveLocal(true);
           refreshAllUI();
         }
@@ -907,6 +1076,221 @@
     window.exerciseDb = safeParse('fit_ex_db', defaultExercises);
     window.programs = safeParse('fit_programs', {});
     window.historyData = safeParse('fit_history', {});
+    window.sessions = safeParse('fit_sessions', null);
+    window.programOrder = safeParse('fit_program_order', null);
+    window.coachTips = safeParse('fit_coach_tips', null);
+
+    const PROGRESSION_DEFAULTS = {
+      scheme: 'double',   // 'double' | 'triple'
+      minSets: 2,
+      maxSets: 3,
+      repMin: 6,
+      repMax: 10,
+      increment: 2.5
+    };
+
+    /* A program entry used to be a bare exercise name. It now carries the
+       progression config, so normalize both shapes to the object form. */
+    function normalizeEntry(entry) {
+      if (typeof entry === 'string') return { name: entry, ...PROGRESSION_DEFAULTS };
+      return { ...PROGRESSION_DEFAULTS, ...entry, name: entry.name };
+    }
+
+    function entryName(entry) {
+      return typeof entry === 'string' ? entry : (entry && entry.name) || '';
+    }
+
+    function todayStr() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    function formatDate(iso) {
+      const [y, m, d] = String(iso).split('-');
+      if (!y || !m || !d) return iso;
+      return `${d}/${m}/${y}`;
+    }
+
+    function migrateData() {
+      // Program entries: string -> object with progression config.
+      Object.keys(window.programs).forEach(p => {
+        if (!Array.isArray(window.programs[p])) window.programs[p] = [];
+        window.programs[p] = window.programs[p].map(normalizeEntry);
+      });
+
+      // Explicit display order, so programs can be reordered independently of
+      // object key order (which is not stable for integer-like names).
+      if (!Array.isArray(window.programOrder)) window.programOrder = Object.keys(window.programs);
+      syncProgramOrder();
+
+      // Session-level history. The old store was keyed by exercise with no
+      // notion of a workout, so rebuild sessions by grouping entries on date.
+      if (!Array.isArray(window.sessions)) {
+        const byDate = {};
+        Object.keys(window.historyData || {}).forEach(exName => {
+          (window.historyData[exName] || []).forEach(rec => {
+            if (!rec || !rec.date) return;
+            (byDate[rec.date] = byDate[rec.date] || []).push({ name: exName, sets: rec.sets || [] });
+          });
+        });
+        window.sessions = Object.keys(byDate).sort().map(date => ({
+          id: `s_${date}_imported`,
+          program: 'Imported history',
+          date,
+          exercises: byDate[date]
+        }));
+      }
+
+      if (!window.coachTips) window.coachTips = null;
+
+      // Sessions are authoritative now, so derive historyData before anything reads it.
+      rebuildHistoryData();
+    }
+
+    window.migrateData = migrateData;
+
+    function syncProgramOrder() {
+      const known = Object.keys(window.programs);
+      window.programOrder = window.programOrder.filter(n => known.includes(n));
+      known.forEach(n => { if (!window.programOrder.includes(n)) window.programOrder.push(n); });
+    }
+
+    function orderedProgramNames() {
+      syncProgramOrder();
+      return window.programOrder.slice();
+    }
+
+    /* ---- derived views over sessions (sessions are the source of truth) ---- */
+
+    function sortedSessions() {
+      return window.sessions.slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    }
+
+    // All performances of one exercise, oldest first.
+    function getExerciseHistory(exName) {
+      const out = [];
+      sortedSessions().forEach(s => {
+        (s.exercises || []).forEach(ex => {
+          if (ex.name === exName && (ex.sets || []).length) {
+            out.push({ date: s.date, sets: ex.sets, sessionId: s.id, program: s.program });
+          }
+        });
+      });
+      return out;
+    }
+
+    function exerciseNamesWithHistory() {
+      const set = new Set();
+      window.sessions.forEach(s => (s.exercises || []).forEach(ex => {
+        if ((ex.sets || []).length) set.add(ex.name);
+      }));
+      return [...set].sort();
+    }
+
+    function programNamesWithHistory() {
+      const map = {};
+      window.sessions.forEach(s => {
+        const hasSets = (s.exercises || []).some(ex => (ex.sets || []).length);
+        if (hasSets) map[s.program] = (map[s.program] || 0) + 1;
+      });
+      return Object.keys(map).sort().map(name => ({ name, count: map[name] }));
+    }
+
+    function findSession(id) {
+      return window.sessions.find(s => s.id === id) || null;
+    }
+
+    function getTodaySession(program) {
+      return window.sessions.find(s => s.program === program && s.date === todayStr()) || null;
+    }
+
+    // Heaviest set ever, with reps as the tie-breaker.
+    function getExerciseBest(exName) {
+      let best = null;
+      getExerciseHistory(exName).forEach(rec => {
+        rec.sets.forEach(st => {
+          if (!best || st.weight > best.weight || (st.weight === best.weight && st.reps > best.reps)) {
+            best = { weight: st.weight, reps: st.reps, date: rec.date };
+          }
+        });
+      });
+      return best;
+    }
+
+    function describeSets(sets) {
+      if (!sets || !sets.length) return '—';
+      const w = sets[0].weight;
+      const sameWeight = sets.every(s => s.weight === w);
+      return sameWeight
+        ? `${w} kg × ${sets.map(s => s.reps).join(', ')}`
+        : sets.map(s => `${s.weight}×${s.reps}`).join(' | ');
+    }
+
+    /* ---- progression engine (deterministic; the AI layer sits on top) ---- */
+
+    // Working weight = the heaviest weight used in that session.
+    function workingWeight(sets) {
+      return sets.reduce((m, s) => Math.max(m, s.weight), 0);
+    }
+
+    function computeProgression(entry, history) {
+      const cfg = normalizeEntry(entry);
+      const last = history[history.length - 1];
+
+      if (!last) {
+        return {
+          cfg,
+          target: null,
+          label: `${cfg.minSets} sets × ${cfg.repMin}–${cfg.repMax} reps`,
+          advice: `First time here — pick a weight you can hold for ${cfg.repMin}–${cfg.repMax} reps.`
+        };
+      }
+
+      const w = workingWeight(last.sets);
+      const topSets = last.sets.filter(s => s.weight === w);
+      const setCount = topSets.length;
+      const allAtCeiling = setCount >= cfg.minSets && topSets.every(s => s.reps >= cfg.repMax);
+
+      if (allAtCeiling) {
+        if (cfg.scheme === 'triple' && setCount < cfg.maxSets) {
+          return {
+            cfg, lastWeight: w,
+            target: { weight: w, sets: setCount + 1, reps: cfg.repMax },
+            label: `${setCount + 1} sets × ${cfg.repMin}–${cfg.repMax} @ ${w} kg`,
+            advice: `All ${setCount} sets hit ${cfg.repMax}. Add a set — go for ${setCount + 1} × ${w} kg.`,
+            action: 'add_set'
+          };
+        }
+        const next = Math.round((w + cfg.increment) * 100) / 100;
+        return {
+          cfg, lastWeight: w,
+          target: { weight: next, sets: cfg.minSets, reps: cfg.repMin },
+          label: `${cfg.minSets} sets × ${cfg.repMin}–${cfg.repMax} @ ${next} kg`,
+          advice: `Ceiling reached at ${w} kg. Move up to ${next} kg and restart at ${cfg.repMin} reps.`,
+          action: 'increase_weight'
+        };
+      }
+
+      const lowest = Math.min(...topSets.map(s => s.reps));
+      return {
+        cfg, lastWeight: w,
+        target: { weight: w, sets: Math.max(setCount, cfg.minSets), reps: Math.min(lowest + 1, cfg.repMax) },
+        label: `${Math.max(setCount, cfg.minSets)} sets × ${cfg.repMin}–${cfg.repMax} @ ${w} kg`,
+        advice: `Stay at ${w} kg and add reps — beat ${topSets.map(s => s.reps).join(', ')}.`,
+        action: 'add_reps'
+      };
+    }
+
+    // Same working weight with no rep improvement over the last 3 sessions.
+    function detectPlateau(exName) {
+      const h = getExerciseHistory(exName);
+      if (h.length < 3) return false;
+      const recent = h.slice(-3);
+      const w = workingWeight(recent[0].sets);
+      if (!recent.every(r => workingWeight(r.sets) === w)) return false;
+      const totals = recent.map(r => r.sets.reduce((sum, s) => sum + s.reps, 0));
+      return totals[2] <= totals[0];
+    }
 
     let currentChart = null;
     let tempBuilderExercises = [];
@@ -915,8 +1299,11 @@
     let activeEditingExerciseName = null;
     let confirmCallback = null;
     let toastTimer = null;
+    let historyPickedProgram = null;
+    let openSessionId = null;
 
     document.addEventListener("DOMContentLoaded", () => {
+      migrateData();
       refreshAllUI();
       loadAiSettingsIntoForm();
 
@@ -932,6 +1319,7 @@
           closeSidebar();
           closeProgramModal();
           closeExerciseModal();
+          closeSchemeModal();
           closeConfirmModal();
         }
       });
@@ -1003,10 +1391,27 @@
       document.removeEventListener('click', handleOutsideMenuClick);
     }
 
+    // historyData is no longer written directly — it is rebuilt from sessions so
+    // the analytics chart and any existing cloud backups keep working.
+    function rebuildHistoryData() {
+      const out = {};
+      sortedSessions().forEach(s => {
+        (s.exercises || []).forEach(ex => {
+          if (!(ex.sets || []).length) return;
+          (out[ex.name] = out[ex.name] || []).push({ date: s.date, sets: ex.sets });
+        });
+      });
+      window.historyData = out;
+    }
+
     function saveLocal(skipCloudSync) {
+      rebuildHistoryData();
       localStorage.setItem('fit_ex_db', JSON.stringify(window.exerciseDb));
       localStorage.setItem('fit_programs', JSON.stringify(window.programs));
       localStorage.setItem('fit_history', JSON.stringify(window.historyData));
+      localStorage.setItem('fit_sessions', JSON.stringify(window.sessions));
+      localStorage.setItem('fit_program_order', JSON.stringify(window.programOrder));
+      localStorage.setItem('fit_coach_tips', JSON.stringify(window.coachTips));
       if (!skipCloudSync && window.syncToCloud) window.syncToCloud();
     }
 
@@ -1015,6 +1420,7 @@
       populateProgramSelect();
       renderExerciseDatabase();
       renderManageProgramsList();
+      renderHistoryPrograms();
     }
 
     function escapeHtml(str) {
@@ -1166,7 +1572,7 @@
 
       if (newName !== oldName) {
         Object.keys(window.programs).forEach(p => {
-          window.programs[p] = window.programs[p].map(n => n === oldName ? newName : n);
+          window.programs[p] = window.programs[p].map(e => e.name === oldName ? { ...e, name: newName } : e);
         });
         if (window.historyData[oldName]) {
           window.historyData[newName] = (window.historyData[newName] || []).concat(window.historyData[oldName]);
@@ -1188,7 +1594,7 @@
       showConfirm(`Delete "${name}"? It will be removed from your database and from any programs that use it.`, () => {
         window.exerciseDb = window.exerciseDb.filter(ex => ex.name !== name);
         Object.keys(window.programs).forEach(p => {
-          window.programs[p] = window.programs[p].filter(n => n !== name);
+          window.programs[p] = window.programs[p].filter(e => e.name !== name);
         });
         saveLocal();
         refreshAllUI();
@@ -1201,9 +1607,9 @@
       const picker = document.getElementById('program-exercise-picker');
       const exName = picker.value;
       if (!exName) return;
-      if (tempBuilderExercises.includes(exName)) return window.showToast('Already added to this program.', true);
+      if (tempBuilderExercises.some(e => e.name === exName)) return window.showToast('Already added to this program.', true);
 
-      tempBuilderExercises.push(exName);
+      tempBuilderExercises.push(normalizeEntry(exName));
       renderBuilderList();
     }
 
@@ -1213,17 +1619,59 @@
         list.innerHTML = `<div class="empty-state">No exercises added yet.</div>`;
         return;
       }
-      list.innerHTML = tempBuilderExercises.map((ex, idx) => `
-        <div class="chip-row">
-          <span>${idx + 1}. ${escapeHtml(ex)}</span>
-          <button class="btn-icon" style="color:var(--danger)" onclick="removeBuilderEx(${idx})" aria-label="Remove ${escapeHtml(ex)}">✕</button>
-        </div>
-      `).join('');
+      list.innerHTML = tempBuilderExercises.map((ex, idx) => reorderableRow({
+        index: idx,
+        total: tempBuilderExercises.length,
+        label: `${idx + 1}. ${escapeHtml(ex.name)}`,
+        sub: schemeSummary(ex),
+        moveFn: 'moveBuilderEx',
+        removeFn: 'removeBuilderEx',
+        editFn: 'openBuilderSchemeEditor'
+      })).join('');
+    }
+
+    function moveBuilderEx(idx, delta) {
+      moveInArray(tempBuilderExercises, idx, delta);
+      renderBuilderList();
     }
 
     function removeBuilderEx(idx) {
       tempBuilderExercises.splice(idx, 1);
       renderBuilderList();
+    }
+
+    /* ---- shared reordering helpers ---- */
+
+    function moveInArray(arr, idx, delta) {
+      const to = idx + delta;
+      if (to < 0 || to >= arr.length) return false;
+      const [item] = arr.splice(idx, 1);
+      arr.splice(to, 0, item);
+      return true;
+    }
+
+    function schemeSummary(entry) {
+      const c = normalizeEntry(entry);
+      const sets = c.scheme === 'triple' ? `${c.minSets}–${c.maxSets}` : `${c.minSets}`;
+      return `${c.scheme === 'triple' ? 'Triple' : 'Double'} · ${sets} × ${c.repMin}–${c.repMax} · +${c.increment}kg`;
+    }
+
+    function reorderableRow({ index, total, label, sub, moveFn, removeFn, editFn }) {
+      return `
+        <div class="chip-row reorder-row">
+          <span class="reorder-handle">
+            <button class="btn-icon" ${index === 0 ? 'disabled' : ''} onclick="${moveFn}(${index}, -1)" aria-label="Move up">▲</button>
+            <button class="btn-icon" ${index === total - 1 ? 'disabled' : ''} onclick="${moveFn}(${index}, 1)" aria-label="Move down">▼</button>
+          </span>
+          <span class="reorder-label">
+            <span>${label}</span>
+            ${sub ? `<small>${escapeHtml(sub)}</small>` : ''}
+          </span>
+          <span class="reorder-actions">
+            ${editFn ? `<button class="btn-icon" onclick="${editFn}(${index})" aria-label="Edit">⚙</button>` : ''}
+            ${removeFn ? `<button class="btn-icon" style="color:var(--danger)" onclick="${removeFn}(${index})" aria-label="Remove">✕</button>` : ''}
+          </span>
+        </div>`;
     }
 
     function saveCustomProgram() {
@@ -1233,7 +1681,8 @@
       if (tempBuilderExercises.length === 0) return window.showToast('Add at least one exercise.', true);
       if (window.programs[name]) return window.showToast('A program with that name already exists.', true);
 
-      window.programs[name] = [...tempBuilderExercises];
+      window.programs[name] = tempBuilderExercises.map(normalizeEntry);
+      window.programOrder.push(name);
       saveLocal();
       refreshAllUI();
 
@@ -1245,19 +1694,34 @@
 
     function renderManageProgramsList() {
       const list = document.getElementById('programs-list-manage');
-      const programKeys = Object.keys(window.programs);
+      const names = orderedProgramNames();
 
-      if (programKeys.length === 0) {
+      if (names.length === 0) {
         list.innerHTML = `<div class="empty-state">No programs yet — build one below or load a preset split.</div>`;
         return;
       }
 
-      list.innerHTML = programKeys.map(pName => `
-        <div class="program-row">
-          <span><strong>${escapeHtml(pName)}</strong> <span class="count">(${window.programs[pName].length} exercises)</span></span>
+      list.innerHTML = names.map((pName, idx) => `
+        <div class="program-row reorder-row">
+          <span class="reorder-handle">
+            <button class="btn-icon" ${idx === 0 ? 'disabled' : ''} onclick="moveProgram(${idx}, -1)" aria-label="Move ${escapeHtml(pName)} up">▲</button>
+            <button class="btn-icon" ${idx === names.length - 1 ? 'disabled' : ''} onclick="moveProgram(${idx}, 1)" aria-label="Move ${escapeHtml(pName)} down">▼</button>
+          </span>
+          <span class="reorder-label">
+            <span><strong>${escapeHtml(pName)}</strong></span>
+            <small>${window.programs[pName].length} exercises</small>
+          </span>
           <button class="btn-icon" onclick="openProgramMenu(this, '${jsAttr(pName)}')" aria-label="Options for ${escapeHtml(pName)}">⋮</button>
         </div>
       `).join('');
+    }
+
+    function moveProgram(idx, delta) {
+      syncProgramOrder();
+      if (!moveInArray(window.programOrder, idx, delta)) return;
+      saveLocal();
+      renderManageProgramsList();
+      populateProgramSelect();
     }
 
     function openProgramMenu(anchorEl, name) {
@@ -1274,8 +1738,9 @@
     }
 
     function confirmDeleteProgram(name, afterClose) {
-      showConfirm(`Delete "${name}"? This can't be undone.`, () => {
+      showConfirm(`Delete "${name}"? Its past sessions stay in your history.`, () => {
         delete window.programs[name];
+        window.programOrder = window.programOrder.filter(n => n !== name);
         saveLocal();
         refreshAllUI();
         if (document.getElementById('select-active-program').value === '' ) {
@@ -1312,7 +1777,10 @@
 
       const chosen = presets[type];
       if (!chosen) return;
-      Object.assign(window.programs, chosen);
+      Object.keys(chosen).forEach(pName => {
+        window.programs[pName] = chosen[pName].map(normalizeEntry);
+        if (!window.programOrder.includes(pName)) window.programOrder.push(pName);
+      });
 
       saveLocal();
       refreshAllUI();
@@ -1323,7 +1791,7 @@
       const select = document.getElementById('select-active-program');
       const previousValue = select.value;
       select.innerHTML = '<option value="">-- Select Workout --</option>';
-      Object.keys(window.programs).forEach(p => {
+      orderedProgramNames().forEach(p => {
         select.innerHTML += `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`;
       });
 
@@ -1339,7 +1807,7 @@
     function openProgramModalByName(pName) {
       if (!window.programs[pName]) return;
       activeEditingProgramName = pName;
-      tempModalExercises = [...window.programs[pName]];
+      tempModalExercises = window.programs[pName].map(normalizeEntry);
 
       document.getElementById('modal-program-title').innerText = `Edit ${pName}`;
       document.getElementById('modal-edit-title').value = pName;
@@ -1354,12 +1822,20 @@
         container.innerHTML = `<div class="empty-state">No exercises in this program.</div>`;
         return;
       }
-      container.innerHTML = tempModalExercises.map((ex, idx) => `
-        <div class="chip-row">
-          <span>${idx + 1}. ${escapeHtml(ex)}</span>
-          <button class="btn-icon" style="color:var(--danger)" onclick="removeModalExercise(${idx})" aria-label="Remove ${escapeHtml(ex)}">✕</button>
-        </div>
-      `).join('');
+      container.innerHTML = tempModalExercises.map((ex, idx) => reorderableRow({
+        index: idx,
+        total: tempModalExercises.length,
+        label: `${idx + 1}. ${escapeHtml(ex.name)}`,
+        sub: schemeSummary(ex),
+        moveFn: 'moveModalExercise',
+        removeFn: 'removeModalExercise',
+        editFn: 'openSchemeEditor'
+      })).join('');
+    }
+
+    function moveModalExercise(idx, delta) {
+      moveInArray(tempModalExercises, idx, delta);
+      renderModalExercisesList();
     }
 
     function removeModalExercise(idx) {
@@ -1371,10 +1847,80 @@
       const picker = document.getElementById('modal-add-ex-picker');
       const exName = picker.value;
       if (!exName) return;
-      if (tempModalExercises.includes(exName)) return window.showToast('Already in this program.', true);
+      if (tempModalExercises.some(e => e.name === exName)) return window.showToast('Already in this program.', true);
 
-      tempModalExercises.push(exName);
+      tempModalExercises.push(normalizeEntry(exName));
       renderModalExercisesList();
+    }
+
+    /* ---- progression scheme editor (shared by builder and program modal) ---- */
+
+    let schemeEditTarget = null;   // { list, index }
+
+    function openSchemeEditor(idx) {
+      schemeEditTarget = { list: tempModalExercises, index: idx };
+      openSchemeEditorFor(tempModalExercises[idx]);
+    }
+
+    function openBuilderSchemeEditor(idx) {
+      schemeEditTarget = { list: tempBuilderExercises, index: idx };
+      openSchemeEditorFor(tempBuilderExercises[idx]);
+    }
+
+    function openSchemeEditorFor(entry) {
+      const c = normalizeEntry(entry);
+      document.getElementById('scheme-modal-title').textContent = c.name;
+      document.getElementById('scheme-type').value = c.scheme;
+      document.getElementById('scheme-min-sets').value = c.minSets;
+      document.getElementById('scheme-max-sets').value = c.maxSets;
+      document.getElementById('scheme-rep-min').value = c.repMin;
+      document.getElementById('scheme-rep-max').value = c.repMax;
+      document.getElementById('scheme-increment').value = c.increment;
+      onSchemeTypeChange();
+      document.getElementById('scheme-modal').style.display = 'flex';
+    }
+
+    function onSchemeTypeChange() {
+      const isTriple = document.getElementById('scheme-type').value === 'triple';
+      document.getElementById('scheme-max-sets-field').style.display = isTriple ? '' : 'none';
+    }
+
+    function closeSchemeModal() {
+      document.getElementById('scheme-modal').style.display = 'none';
+      schemeEditTarget = null;
+    }
+
+    function saveSchemeChanges() {
+      if (!schemeEditTarget) return closeSchemeModal();
+
+      const scheme = document.getElementById('scheme-type').value;
+      const minSets = parseInt(document.getElementById('scheme-min-sets').value, 10);
+      const maxSets = parseInt(document.getElementById('scheme-max-sets').value, 10);
+      const repMin = parseInt(document.getElementById('scheme-rep-min').value, 10);
+      const repMax = parseInt(document.getElementById('scheme-rep-max').value, 10);
+      const increment = parseFloat(document.getElementById('scheme-increment').value);
+
+      if (!(minSets >= 1)) return window.showToast('Sets must be at least 1.', true);
+      if (!(repMin >= 1) || !(repMax >= repMin)) return window.showToast('Rep range is not valid.', true);
+      if (!(increment > 0)) return window.showToast('Weight step must be greater than 0.', true);
+      if (scheme === 'triple' && !(maxSets >= minSets)) {
+        return window.showToast('Max sets must be at least the starting sets.', true);
+      }
+
+      const { list, index } = schemeEditTarget;
+      list[index] = {
+        ...list[index],
+        scheme,
+        minSets,
+        maxSets: scheme === 'triple' ? maxSets : minSets,
+        repMin,
+        repMax,
+        increment
+      };
+
+      closeSchemeModal();
+      if (list === tempBuilderExercises) renderBuilderList(); else renderModalExercisesList();
+      window.showToast('Progression updated.');
     }
 
     function saveProgramModalChanges() {
@@ -1387,9 +1933,11 @@
 
       if (newTitle !== activeEditingProgramName) {
         delete window.programs[activeEditingProgramName];
+        const at = window.programOrder.indexOf(activeEditingProgramName);
+        if (at !== -1) window.programOrder[at] = newTitle; else window.programOrder.push(newTitle);
       }
 
-      window.programs[newTitle] = [...tempModalExercises];
+      window.programs[newTitle] = tempModalExercises.map(normalizeEntry);
       saveLocal();
       refreshAllUI();
 
@@ -1421,68 +1969,318 @@
       }
 
       optBtn.style.display = 'inline-block';
+      renderWorkoutSession(selected);
+    }
 
-      window.programs[selected].forEach((exName, idx) => {
-        container.innerHTML += `
-          <div class="card">
-            <h3>${escapeHtml(exName)}</h3>
-            <div id="sets-box-${idx}">
-              <div class="set-row">
-                <span>Set 1</span>
-                <input type="number" inputmode="decimal" placeholder="kg" class="w-${idx}">
-                <input type="number" inputmode="numeric" placeholder="reps" class="r-${idx}">
-              </div>
-            </div>
-            <button class="btn-add-set" onclick="addSetRowToSession(${idx})">+ Add Set</button>
+    function renderWorkoutSession(program) {
+      const container = document.getElementById('active-workout-container');
+      const entries = window.programs[program].map(normalizeEntry);
+      const saved = getTodaySession(program);
+
+      const deload = window.coachTips && window.coachTips.deload;
+      const banner = deload && deload.recommended
+        ? `<div class="coach-banner deload">
+             <strong>Deload suggested</strong>
+             <span>${escapeHtml(deload.reason || 'Your recent sessions suggest accumulated fatigue.')}</span>
+           </div>`
+        : '';
+
+      let html = `
+        <div class="session-head">
+          <div>
+            <span class="session-date">${formatDate(todayStr())}</span>
+            <small>${saved ? 'Session already logged today — edit and save again to update it.' : 'New session'}</small>
           </div>
-        `;
+          ${saved ? '<span class="badge-done">Logged</span>' : ''}
+        </div>
+        ${banner}
+      `;
+
+      entries.forEach((entry, idx) => {
+        const history = getExerciseHistory(entry.name);
+        const prog = computeProgression(entry, history);
+        const best = getExerciseBest(entry.name);
+        const last = history[history.length - 1];
+        const savedSets = saved ? ((saved.exercises.find(e => e.name === entry.name) || {}).sets || []) : [];
+        const tip = getCoachTip(entry.name);
+        const plateau = detectPlateau(entry.name);
+
+        // Pre-fill from the progression target so the user starts from the right weight.
+        const suggestedWeight = prog.target ? prog.target.weight : '';
+        const rowCount = Math.max(savedSets.length, prog.target ? prog.target.sets : entry.minSets, 1);
+
+        let setRows = '';
+        for (let i = 0; i < rowCount; i++) {
+          const s = savedSets[i];
+          const done = !!s;
+          setRows += `
+            <div class="set-row${done ? ' done' : ''}">
+              <span>${done ? '✓' : ''} Set ${i + 1}</span>
+              <input type="number" inputmode="decimal" placeholder="kg" class="w-${idx}"
+                     value="${s ? s.weight : ''}" data-suggest="${suggestedWeight}">
+              <input type="number" inputmode="numeric" placeholder="reps" class="r-${idx}"
+                     value="${s ? s.reps : ''}">
+            </div>`;
+        }
+
+        html += `
+          <div class="card exercise-card">
+            <div class="ex-head">
+              <span class="reorder-handle">
+                <button class="btn-icon" ${idx === 0 ? 'disabled' : ''} onclick="moveTrackerExercise('${jsAttr(program)}', ${idx}, -1)" aria-label="Move up">▲</button>
+                <button class="btn-icon" ${idx === entries.length - 1 ? 'disabled' : ''} onclick="moveTrackerExercise('${jsAttr(program)}', ${idx}, 1)" aria-label="Move down">▼</button>
+              </span>
+              <h3>${idx + 1}. ${escapeHtml(entry.name)}</h3>
+            </div>
+
+            <div class="target-line">
+              <span class="target-chip">Target: ${escapeHtml(prog.label)}</span>
+              ${plateau ? '<span class="target-chip warn">Plateau</span>' : ''}
+            </div>
+            <p class="advice">${escapeHtml(prog.advice)}</p>
+
+            <div class="pr-line">
+              <span><b>Best:</b> ${best ? `${best.weight} kg × ${best.reps} <small>(${formatDate(best.date)})</small>` : '—'}</span>
+              <span><b>Last:</b> ${last ? `${escapeHtml(describeSets(last.sets))} <small>(${formatDate(last.date)})</small>` : '—'}</span>
+            </div>
+
+            ${tip ? `<div class="coach-tip"><b>Coach:</b> ${escapeHtml(tip)}</div>` : ''}
+
+            <div id="sets-box-${idx}">${setRows}</div>
+            <button class="btn-add-set" onclick="addSetRowToSession(${idx})">+ Add Set</button>
+          </div>`;
       });
 
-      container.innerHTML += `<button class="btn-primary" onclick="finishWorkoutSession()">Complete & Save Session</button>`;
+      html += `<button class="btn-primary" onclick="finishWorkoutSession()">${saved ? 'Update Session' : 'Complete & Save Session'}</button>`;
+      container.innerHTML = html;
+
+      // Prefill empty weight fields with the progression target.
+      container.querySelectorAll('input[data-suggest]').forEach(inp => {
+        if (!inp.value && inp.dataset.suggest) inp.placeholder = `${inp.dataset.suggest} kg`;
+      });
+    }
+
+    function moveTrackerExercise(program, idx, delta) {
+      if (!window.programs[program]) return;
+      if (!moveInArray(window.programs[program], idx, delta)) return;
+      saveLocal();
+      renderWorkoutSession(program);
+      renderManageProgramsList();
     }
 
     function addSetRowToSession(exIdx) {
       const box = document.getElementById(`sets-box-${exIdx}`);
       const setNum = box.children.length + 1;
+      const suggest = (box.querySelector('input[data-suggest]') || {}).dataset?.suggest || '';
       box.insertAdjacentHTML('beforeend', `
         <div class="set-row">
           <span>Set ${setNum}</span>
-          <input type="number" inputmode="decimal" placeholder="kg" class="w-${exIdx}">
+          <input type="number" inputmode="decimal" placeholder="${suggest ? suggest + ' kg' : 'kg'}" class="w-${exIdx}" data-suggest="${suggest}">
           <input type="number" inputmode="numeric" placeholder="reps" class="r-${exIdx}">
         </div>
       `);
     }
 
-    function finishWorkoutSession() {
-      const selectedProgram = document.getElementById('select-active-program').value;
-      if (!selectedProgram) return;
-
-      const dateStr = new Date().toISOString().split('T')[0];
-      let loggedAny = false;
-
-      window.programs[selectedProgram].forEach((exName, idx) => {
+    function collectSessionExercises(program) {
+      const entries = window.programs[program].map(normalizeEntry);
+      const out = [];
+      entries.forEach((entry, idx) => {
         const weights = document.querySelectorAll(`.w-${idx}`);
         const reps = document.querySelectorAll(`.r-${idx}`);
-
-        const setsData = [];
+        const sets = [];
         weights.forEach((wIn, i) => {
           const w = parseFloat(wIn.value);
-          const r = parseInt(reps[i].value, 10);
-          if (!isNaN(w) && !isNaN(r)) setsData.push({ weight: w, reps: r });
+          const r = reps[i] ? parseInt(reps[i].value, 10) : NaN;
+          if (!isNaN(w) && !isNaN(r)) sets.push({ weight: w, reps: r });
         });
-
-        if (setsData.length > 0) {
-          if (!window.historyData[exName]) window.historyData[exName] = [];
-          window.historyData[exName].push({ date: dateStr, sets: setsData });
-          loggedAny = true;
-        }
+        if (sets.length) out.push({ name: entry.name, sets });
       });
+      return out;
+    }
 
-      if (!loggedAny) return window.showToast('Log at least one set before saving.', true);
+    // Saving is an upsert on program+date, so re-saving edits today's session
+    // instead of appending a duplicate — and the entered sets stay on screen.
+    function finishWorkoutSession() {
+      const program = document.getElementById('select-active-program').value;
+      if (!program) return;
+
+      const exercises = collectSessionExercises(program);
+      if (!exercises.length) return window.showToast('Log at least one set before saving.', true);
+
+      const existing = getTodaySession(program);
+      if (existing) {
+        existing.exercises = exercises;
+      } else {
+        window.sessions.push({
+          id: `s_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          program,
+          date: todayStr(),
+          exercises
+        });
+      }
 
       saveLocal();
-      window.showToast('Workout session saved.');
-      startWorkoutSession();
+      renderWorkoutSession(program);
+      renderHistoryPrograms();
+      window.showToast(existing ? 'Session updated.' : 'Workout session saved.');
+    }
+
+    /* ---------------- workout history browser ---------------- */
+
+    function showHistoryStep(step) {
+      ['programs', 'dates', 'session'].forEach(s => {
+        document.getElementById(`history-step-${s}`).style.display = s === step ? '' : 'none';
+      });
+    }
+
+    function renderHistoryPrograms() {
+      const list = document.getElementById('history-programs-list');
+      if (!list) return;
+      const programs = programNamesWithHistory();
+
+      if (!programs.length) {
+        list.innerHTML = `<div class="empty-state">No sessions logged yet. Complete a workout and it will show up here.</div>`;
+        return;
+      }
+
+      list.innerHTML = programs.map(p => `
+        <div class="program-row tappable" onclick="openHistoryProgram('${jsAttr(p.name)}')">
+          <span class="reorder-label">
+            <span><strong>${escapeHtml(p.name)}</strong></span>
+            <small>${p.count} session${p.count === 1 ? '' : 's'}</small>
+          </span>
+          <span class="chev">›</span>
+        </div>
+      `).join('');
+    }
+
+    function openHistoryProgram(name) {
+      historyPickedProgram = name;
+      document.getElementById('history-dates-title').textContent = name;
+
+      const rows = window.sessions
+        .filter(s => s.program === name && (s.exercises || []).some(e => (e.sets || []).length))
+        .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+
+      const list = document.getElementById('history-dates-list');
+      list.innerHTML = rows.map(s => {
+        const exCount = s.exercises.filter(e => (e.sets || []).length).length;
+        const setCount = s.exercises.reduce((n, e) => n + (e.sets || []).length, 0);
+        const volume = s.exercises.reduce((v, e) =>
+          v + (e.sets || []).reduce((sv, st) => sv + st.weight * st.reps, 0), 0);
+        return `
+          <div class="program-row tappable" onclick="openHistorySession('${jsAttr(s.id)}')">
+            <span class="reorder-label">
+              <span><strong>${formatDate(s.date)}</strong></span>
+              <small>${exCount} exercises · ${setCount} sets · ${Math.round(volume)} kg volume</small>
+            </span>
+            <span class="chev">›</span>
+          </div>`;
+      }).join('');
+
+      showHistoryStep('dates');
+    }
+
+    function historyBackToPrograms() {
+      renderHistoryPrograms();
+      showHistoryStep('programs');
+    }
+
+    function historyBackToDates() {
+      if (historyPickedProgram) openHistoryProgram(historyPickedProgram);
+      else historyBackToPrograms();
+    }
+
+    function openHistorySession(id) {
+      const s = findSession(id);
+      if (!s) return;
+      openSessionId = id;
+      document.getElementById('history-session-title').textContent = `${s.program} — ${formatDate(s.date)}`;
+      renderOpenSession();
+      showHistoryStep('session');
+    }
+
+    function renderOpenSession() {
+      const s = findSession(openSessionId);
+      const body = document.getElementById('history-session-body');
+      if (!s) { body.innerHTML = ''; return; }
+
+      body.innerHTML = s.exercises.map((ex, exIdx) => `
+        <div class="card session-ex">
+          <div class="ex-head">
+            <span class="reorder-handle">
+              <button class="btn-icon" ${exIdx === 0 ? 'disabled' : ''} onclick="moveSessionExercise(${exIdx}, -1)" aria-label="Move up">▲</button>
+              <button class="btn-icon" ${exIdx === s.exercises.length - 1 ? 'disabled' : ''} onclick="moveSessionExercise(${exIdx}, 1)" aria-label="Move down">▼</button>
+            </span>
+            <h3>${exIdx + 1}. ${escapeHtml(ex.name)}</h3>
+          </div>
+          ${(ex.sets || []).map((st, sIdx) => `
+            <div class="set-row done">
+              <span>Set ${sIdx + 1}</span>
+              <input type="number" inputmode="decimal" value="${st.weight}"
+                     onchange="updateSessionSet(${exIdx}, ${sIdx}, 'weight', this.value)">
+              <input type="number" inputmode="numeric" value="${st.reps}"
+                     onchange="updateSessionSet(${exIdx}, ${sIdx}, 'reps', this.value)">
+              <button class="btn-icon" style="color:var(--danger)" onclick="removeSessionSet(${exIdx}, ${sIdx})" aria-label="Remove set">✕</button>
+            </div>`).join('')}
+          <button class="btn-add-set" onclick="addSessionSet(${exIdx})">+ Add Set</button>
+        </div>
+      `).join('') || `<div class="empty-state">This session has no exercises left.</div>`;
+    }
+
+    function updateSessionSet(exIdx, sIdx, field, value) {
+      const s = findSession(openSessionId);
+      if (!s) return;
+      const num = field === 'reps' ? parseInt(value, 10) : parseFloat(value);
+      if (isNaN(num)) return;
+      s.exercises[exIdx].sets[sIdx][field] = num;
+    }
+
+    function addSessionSet(exIdx) {
+      const s = findSession(openSessionId);
+      if (!s) return;
+      const sets = s.exercises[exIdx].sets;
+      const lastSet = sets[sets.length - 1];
+      sets.push(lastSet ? { ...lastSet } : { weight: 0, reps: 0 });
+      renderOpenSession();
+    }
+
+    function removeSessionSet(exIdx, sIdx) {
+      const s = findSession(openSessionId);
+      if (!s) return;
+      s.exercises[exIdx].sets.splice(sIdx, 1);
+      if (!s.exercises[exIdx].sets.length) s.exercises.splice(exIdx, 1);
+      renderOpenSession();
+    }
+
+    function moveSessionExercise(idx, delta) {
+      const s = findSession(openSessionId);
+      if (!s) return;
+      if (!moveInArray(s.exercises, idx, delta)) return;
+      renderOpenSession();
+    }
+
+    function saveOpenSession() {
+      const s = findSession(openSessionId);
+      if (!s) return;
+      if (!s.exercises.length) return deleteOpenSession();
+      saveLocal();
+      refreshAllUI();
+      window.showToast('Session updated.');
+      historyBackToDates();
+    }
+
+    function deleteOpenSession() {
+      const s = findSession(openSessionId);
+      if (!s) return;
+      showConfirm(`Delete the ${s.program} session from ${formatDate(s.date)}?`, () => {
+        window.sessions = window.sessions.filter(x => x.id !== openSessionId);
+        openSessionId = null;
+        saveLocal();
+        refreshAllUI();
+        window.showToast('Session deleted.');
+        historyBackToPrograms();
+      });
     }
 
     const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta';
@@ -1617,16 +2415,19 @@
       return headers;
     }
 
-    async function callGemini(prompt) {
+    async function callGemini(prompt, wantJson) {
       const apiKey = localStorage.getItem('ai_apikey');
       const model = localStorage.getItem('ai_model');
       if (!apiKey) throw new Error('Add your Google AI API key in the settings above.');
       if (!model) throw new Error('Run Test Connection first so a model can be selected.');
 
+      const body = { contents: [{ parts: [{ text: prompt }] }] };
+      if (wantJson) body.generationConfig = { responseMimeType: 'application/json' };
+
       const res = await fetch(`${GEMINI_BASE}/models/${encodeURIComponent(model)}:generateContent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        body: JSON.stringify(body)
       });
 
       if (!res.ok) {
@@ -1663,30 +2464,139 @@
         || JSON.stringify(data, null, 2);
     }
 
+    function getCoachTip(exName) {
+      if (!window.coachTips || !Array.isArray(window.coachTips.exercises)) return null;
+      const hit = window.coachTips.exercises.find(e => e.name === exName);
+      return hit ? hit.detail : null;
+    }
+
+    // Everything the coach needs: the configured scheme, what the deterministic
+    // engine already decided, and the recent sets — so the model reasons about
+    // judgement calls rather than re-deriving arithmetic it would get wrong.
+    function buildCoachPayload() {
+      const out = [];
+      orderedProgramNames().forEach(pName => {
+        window.programs[pName].map(normalizeEntry).forEach(entry => {
+          const history = getExerciseHistory(entry.name);
+          if (!history.length) return;
+          const prog = computeProgression(entry, history);
+          out.push({
+            program: pName,
+            exercise: entry.name,
+            scheme: entry.scheme,
+            setsRange: entry.scheme === 'triple' ? [entry.minSets, entry.maxSets] : [entry.minSets, entry.minSets],
+            repRange: [entry.repMin, entry.repMax],
+            incrementKg: entry.increment,
+            engineSuggestion: prog.action || 'start',
+            plateau: detectPlateau(entry.name),
+            recentSessions: history.slice(-6).map(h => ({ date: h.date, sets: h.sets }))
+          });
+        });
+      });
+      return out;
+    }
+
+    const COACH_SCHEMA_HINT = `Return ONLY JSON matching:
+{
+  "overall": "2-3 sentence summary",
+  "deload": { "recommended": true|false, "reason": "..." },
+  "exercises": [
+    { "name": "<exact exercise name>",
+      "action": "increase_weight" | "add_set" | "add_reps" | "dropset" | "swap" | "hold",
+      "detail": "one short actionable sentence" }
+  ]
+}`;
+
     async function runAiAnalysis() {
-      if (Object.keys(window.historyData).length === 0) return window.showToast('Log a few workouts first so there is data to analyze.', true);
+      const payload = buildCoachPayload();
+      if (!payload.length) return window.showToast('Log a few workouts first so there is data to analyze.', true);
 
       const card = document.getElementById('ai-response-card');
       const textEl = document.getElementById('ai-response-text');
       card.style.display = 'block';
       textEl.innerText = 'Analyzing your workouts and progress...';
 
-      const prompt = `You are an elite strength & hypertrophy coach. Analyze this workout history data:
-${JSON.stringify(window.historyData, null, 2)}
+      const prompt = `You are an elite strength & hypertrophy coach guiding a lifter who trains with Double Progression and Triple Progression.
 
-Provide recommendations in English on:
-1. Progress or plateau detection per exercise.
-2. Fatigue management (deload or rest week recommendations).
-3. Exercise substitutions for stalled movements.`;
+Double Progression: keep the same weight until every set reaches the top of the rep range, then add weight and restart at the bottom of the range.
+Triple Progression: same, but when every set reaches the top of the range, first add a set (up to the max), and only once the max set count is also at the top of the range does the weight go up.
+
+A deterministic engine already computed the routine next step for each exercise ("engineSuggestion"). Do not repeat simple arithmetic — focus on judgement:
+- when a lifter is stalling and should add a set (moving Double toward Triple),
+- when to finish an exercise with a drop set for extra intensity,
+- when an exercise has stopped working and should be swapped,
+- when accumulated fatigue calls for a deload week or a rest week.
+
+Training data:
+${JSON.stringify(payload, null, 2)}
+
+${COACH_SCHEMA_HINT}`;
 
       try {
-        const text = getAiProvider() === 'gemini'
-          ? await callGemini(prompt)
+        const raw = getAiProvider() === 'gemini'
+          ? await callGemini(prompt, true)
           : await callCustomEndpoint(prompt);
-        textEl.innerText = text || 'No response received from the AI coach.';
+
+        const parsed = parseCoachJson(raw);
+        if (parsed) {
+          window.coachTips = parsed;
+          saveLocal();
+          renderCoachSummary(parsed, textEl);
+          const program = document.getElementById('select-active-program').value;
+          if (program && window.programs[program]) renderWorkoutSession(program);
+          window.showToast('Coach advice updated — tips now show inside your workout.');
+        } else {
+          textEl.innerText = raw || 'No response received from the AI coach.';
+        }
       } catch (e) {
         textEl.innerText = 'Error connecting to the AI coach: ' + e.message;
       }
+    }
+
+    // Models sometimes wrap JSON in code fences or prose; recover the object.
+    function parseCoachJson(raw) {
+      if (!raw) return null;
+      const attempts = [raw];
+      const fenced = String(raw).match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (fenced) attempts.push(fenced[1]);
+      const braced = String(raw).match(/\{[\s\S]*\}/);
+      if (braced) attempts.push(braced[0]);
+
+      for (const a of attempts) {
+        try {
+          const obj = JSON.parse(a);
+          if (obj && (obj.overall || obj.exercises || obj.deload)) return obj;
+        } catch (e) { /* try the next shape */ }
+      }
+      return null;
+    }
+
+    const ACTION_LABEL = {
+      increase_weight: 'Add weight',
+      add_set: 'Add a set',
+      add_reps: 'Add reps',
+      dropset: 'Finish with a drop set',
+      swap: 'Swap exercise',
+      hold: 'Hold steady'
+    };
+
+    function renderCoachSummary(tips, el) {
+      let html = '';
+      if (tips.overall) html += `<p style="margin-bottom:12px;">${escapeHtml(tips.overall)}</p>`;
+      if (tips.deload && tips.deload.recommended) {
+        html += `<div class="coach-banner deload" style="margin-bottom:12px;">
+                   <strong>Deload recommended</strong>
+                   <span>${escapeHtml(tips.deload.reason || '')}</span>
+                 </div>`;
+      }
+      if (Array.isArray(tips.exercises) && tips.exercises.length) {
+        html += tips.exercises.map(e => `
+          <div class="coach-row">
+            <span class="action-chip action-${escapeHtml(e.action || 'hold')}">${escapeHtml(ACTION_LABEL[e.action] || e.action || 'Note')}</span>
+            <span><b>${escapeHtml(e.name || '')}</b> — ${escapeHtml(e.detail || '')}</span>
+          </div>`).join('');
+      }
+      el.innerHTML = html || 'No advice returned.';
     }
 
     function populateAnalyticsPicker() {
