@@ -5,6 +5,21 @@
   <!-- השורה הקריטית הבאה אומרת לאייפון לאפשר הימתחות לאזורים המוגנים -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
+  <!-- Defence in depth. connect-src is the important one: even if a scripting
+       bug slipped through, the stored API key could not be posted to an
+       attacker's server, only to Google. Adding a custom AI endpoint on
+       another domain means adding that domain here. -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.gstatic.com;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    font-src 'self' https://fonts.gstatic.com;
+    img-src 'self' data:;
+    connect-src 'self' https://*.googleapis.com https://*.firebaseio.com;
+    object-src 'none';
+    base-uri 'self';
+    form-action 'none'">
+
   <meta name="theme-color" content="#14161b">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1702,10 +1717,20 @@
       renderHistoryPrograms();
     }
 
+    /* Must be safe for BOTH text content and attribute values.
+
+       The old version set textContent and read back innerHTML, which escapes
+       < > and & but leaves quotes untouched. Since this is interpolated into
+       attributes (value="...", aria-label="..."), an exercise name or an AI
+       reply containing a double quote closed the attribute and injected a real
+       event handler — script execution with access to the stored API key. */
     function escapeHtml(str) {
-      const div = document.createElement('div');
-      div.textContent = str;
-      return div.innerHTML;
+      return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
 
     function jsAttr(str) {
