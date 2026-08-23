@@ -483,6 +483,87 @@
     .set-row.done input { border-color: var(--success); background: rgba(82,199,133,0.07); }
     .set-row.done span { color: var(--success); font-weight: 700; }
     .set-row:has(> button) { grid-template-columns: 52px 1fr 1fr auto; }
+
+    /* ---- per-set confirm / delete ---- */
+    #active-workout-container .set-row { grid-template-columns: 46px 1fr 1fr 34px 26px; gap: 6px; }
+    .set-ok, .set-del {
+      width: auto; margin: 0; padding: 0; border-radius: 8px;
+      display: grid; place-items: center; height: 40px;
+      font-size: 0.95rem; font-weight: 700; cursor: pointer;
+      background: var(--bg-input); border: 1px solid var(--border); color: var(--text-sub);
+    }
+    .set-ok:hover { border-color: var(--success); color: var(--success); }
+    .set-ok.on { background: var(--success); border-color: var(--success); color: #0d2417; }
+    .set-del { border: none; background: transparent; color: var(--text-sub); font-size: 0.85rem; }
+    .set-del:hover { color: var(--danger); }
+
+    /* An auto-filled weight reads as a suggestion until you touch it. */
+    input.auto { color: var(--accent); border-style: dashed; }
+
+    /* ---- light week ---- */
+    .light-week {
+      background: var(--bg-elevated); border: 1px solid var(--teal);
+      border-radius: 12px; padding: 12px 14px; margin-bottom: 14px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .lw-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+    .lw-head strong { font-family: var(--font-display); text-transform: uppercase; letter-spacing: .04em; font-size: .82rem; color: var(--teal); }
+    .lw-head span { font-size: .78rem; color: var(--text-sub); font-variant-numeric: tabular-nums; }
+
+    .mode-toggle { display: flex; gap: 0; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
+    .mode-toggle button {
+      flex: 1; width: auto; margin: 0; border: none; border-radius: 0;
+      background: var(--bg-input); color: var(--text-sub);
+      font-size: .85rem; font-weight: 700; padding: 10px 8px;
+    }
+    .mode-toggle button.on { background: var(--teal); color: #0b2422; }
+
+    .lw-foot { display: flex; align-items: center; gap: 8px; }
+    .lw-foot label { margin: 0; font-size: .72rem; }
+    .lw-foot input {
+      width: 68px; margin: 0; padding: 7px 8px; text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .chip-btn {
+      width: auto; margin: 0; padding: 6px 14px; border-radius: 999px;
+      font-size: .78rem; font-weight: 700;
+      background: var(--bg-input); color: var(--text); border: 1px solid var(--border);
+    }
+    .chip-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .banner-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+
+    .coach-banner.rest { background: rgba(79,209,197,0.1); border-color: var(--teal); }
+    .coach-banner.rest strong { color: var(--teal); }
+
+    /* ---- ask-the-coach bar ---- */
+    .coach-bar {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--bg-elevated); border: 1px solid var(--violet);
+      border-radius: 12px; padding: 10px 14px; margin-bottom: 14px;
+    }
+    .coach-btn {
+      width: auto; margin: 0; padding: 9px 16px; border-radius: 9px;
+      background: var(--violet); color: #17123a; border: none;
+      font-size: .86rem; font-weight: 700; white-space: nowrap;
+    }
+    .coach-btn:disabled { opacity: .55; cursor: default; }
+    .coach-bar small { color: var(--text-sub); font-size: .76rem; }
+
+    .exercise-card.is-deload { border-color: var(--teal); }
+    .target-chip.deload { background: rgba(79,209,197,0.12); color: var(--teal); border-color: var(--teal); }
+
+    /* The tracker text is Hebrew, so it reads right-to-left; numbers and dates
+       inside it are isolated with <bdi> so bidi cannot reorder them. */
+    #active-workout-container { direction: rtl; text-align: right; }
+    /* A target reads as a formula (2 × 6–10 @ 52.5) — left-to-right, or bidi
+       flips the rep range into 10–6. */
+    .target-chip { direction: ltr; unicode-bidi: isolate; }
+    #active-workout-container .advice,
+    #active-workout-container .pr-line,
+    #active-workout-container .coach-tip { text-align: right; }
+    #active-workout-container input { direction: ltr; text-align: center; }
+    .startdate-ltr, .pr-line small { unicode-bidi: isolate; }
   </style>
 </head>
 <body>
@@ -951,7 +1032,8 @@
           history: window.historyData,
           sessions: window.sessions,
           programOrder: window.programOrder,
-          coachTips: window.coachTips || null
+          coachTips: window.coachTips || null,
+          deloadWeek: window.deloadWeek || null
         });
       } catch (e) { console.error("Sync error: ", e); }
     };
@@ -969,6 +1051,7 @@
           if (data.sessions) window.sessions = data.sessions;
           if (data.programOrder) window.programOrder = data.programOrder;
           if (data.coachTips !== undefined) window.coachTips = data.coachTips;
+          if (data.deloadWeek !== undefined) window.deloadWeek = data.deloadWeek;
           // Re-run migration so a backup written by an older version is upgraded.
           window.migrateData && window.migrateData();
           saveLocal(true);
@@ -1079,6 +1162,14 @@
     window.sessions = safeParse('fit_sessions', null);
     window.programOrder = safeParse('fit_program_order', null);
     window.coachTips = safeParse('fit_coach_tips', null);
+    window.deloadWeek = safeParse('fit_deload_week', null);
+
+    // Share of the working weight kept during a light week; user-adjustable.
+    const DELOAD_PCT_DEFAULT = 85;
+    function deloadPct() {
+      const v = parseInt(localStorage.getItem('fit_deload_pct'), 10);
+      return (v >= 40 && v <= 95) ? v : DELOAD_PCT_DEFAULT;
+    }
 
     const PROGRESSION_DEFAULTS = {
       scheme: 'double',   // 'double' | 'triple'
@@ -1141,7 +1232,12 @@
         }));
       }
 
-      if (!window.coachTips) window.coachTips = null;
+      // Coach advice is now cached per program. Old flat advice is stale
+      // guidance rather than user data, so drop it — one tap regenerates it.
+      if (!window.coachTips || !window.coachTips.byProgram) window.coachTips = { byProgram: {} };
+
+      // A finished light week should not linger.
+      if (window.deloadWeek && window.deloadWeek.end < todayStr()) window.deloadWeek = null;
 
       // Sessions are authoritative now, so derive historyData before anything reads it.
       rebuildHistoryData();
@@ -1172,11 +1268,90 @@
       sortedSessions().forEach(s => {
         (s.exercises || []).forEach(ex => {
           if (ex.name === exName && (ex.sets || []).length) {
-            out.push({ date: s.date, sets: ex.sets, sessionId: s.id, program: s.program });
+            out.push({ date: s.date, sets: ex.sets, sessionId: s.id, program: s.program, deload: !!s.deload });
           }
         });
       });
       return out;
+    }
+
+    /* The history the progression engine is allowed to reason from.
+
+       Two exclusions, both load-bearing:
+       - deload sessions, or a light week would reset the working weight and
+         silently erase real progress;
+       - today, so the target stays put while you are training instead of
+         recomputing off the sets you just logged. */
+    function getProgressionHistory(exName) {
+      const today = todayStr();
+      return getExerciseHistory(exName).filter(h => !h.deload && h.date < today);
+    }
+
+    /* ---- calendar week (Sunday–Saturday) ---- */
+
+    function weekBounds(weeksAhead) {
+      const d = new Date();
+      d.setHours(12, 0, 0, 0);                       // avoid DST edges
+      d.setDate(d.getDate() - d.getDay() + (weeksAhead || 0) * 7);   // getDay: 0 = Sunday
+      const start = new Date(d);
+      const end = new Date(d);
+      end.setDate(end.getDate() + 6);
+      const fmt = x => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+      return { start: fmt(start), end: fmt(end) };
+    }
+
+    function activeLightWeek() {
+      const w = window.deloadWeek;
+      if (!w) return null;
+      const t = todayStr();
+      return (t >= w.start && t <= w.end) ? w : null;
+    }
+
+    function startLightWeek(type, weeksAhead) {
+      const { start, end } = weekBounds(weeksAhead);
+      window.deloadWeek = { type, start, end };
+      saveLocal();
+      const program = document.getElementById('select-active-program').value;
+      if (program && window.programs[program]) renderWorkoutSession(program);
+      // Toasts are plain text, so isolate the range or bidi renders it backwards.
+      const range = `⁦${formatDate(start)}–${formatDate(end)}⁩`;
+      window.showToast(type === 'rest'
+        ? `שבוע מנוחה מסומן: ${range}`
+        : `שבוע דילואוד פעיל: ${range}`);
+    }
+
+    function endLightWeek() {
+      window.deloadWeek = null;
+      workoutModeOverride = null;
+      saveLocal();
+      const program = document.getElementById('select-active-program').value;
+      if (program && window.programs[program]) renderWorkoutSession(program);
+      window.showToast('חזרה לאימון רגיל.');
+    }
+
+    function setDeloadPct(value) {
+      const v = parseInt(value, 10);
+      if (!(v >= 40 && v <= 95)) return window.showToast('אחוז דילואוד חייב להיות בין 40 ל־95.', true);
+      localStorage.setItem('fit_deload_pct', String(v));
+      const program = document.getElementById('select-active-program').value;
+      if (program && window.programs[program]) renderWorkoutSession(program);
+    }
+
+    /* What this workout actually is. The week sets the default; the session
+       records the truth, because the plan and the day often disagree. */
+    function getWorkoutMode(program) {
+      const saved = getTodaySession(program);
+      if (saved) return saved.deload ? 'deload' : 'full';
+      if (workoutModeOverride) return workoutModeOverride;
+      const w = activeLightWeek();
+      return (w && w.type === 'deload') ? 'deload' : 'full';
+    }
+
+    function setWorkoutMode(program, mode) {
+      workoutModeOverride = mode;
+      const saved = getTodaySession(program);
+      if (saved) { saved.deload = (mode === 'deload'); saveLocal(); }
+      renderWorkoutSession(program);
     }
 
     function exerciseNamesWithHistory() {
@@ -1222,7 +1397,7 @@
       const w = sets[0].weight;
       const sameWeight = sets.every(s => s.weight === w);
       return sameWeight
-        ? `${w} kg × ${sets.map(s => s.reps).join(', ')}`
+        ? `${w} ק"ג × ${sets.map(s => s.reps).join(', ')}`
         : sets.map(s => `${s.weight}×${s.reps}`).join(' | ');
     }
 
@@ -1241,8 +1416,8 @@
         return {
           cfg,
           target: null,
-          label: `${cfg.minSets} sets × ${cfg.repMin}–${cfg.repMax} reps`,
-          advice: `First time here — pick a weight you can hold for ${cfg.repMin}–${cfg.repMax} reps.`
+          label: `${cfg.minSets} × ${cfg.repMin}–${cfg.repMax}`,
+          advice: `פעם ראשונה בתרגיל — בחר משקל שאתה מחזיק בו ${cfg.repMin}–${cfg.repMax} חזרות.`
         };
       }
 
@@ -1256,8 +1431,8 @@
           return {
             cfg, lastWeight: w,
             target: { weight: w, sets: setCount + 1, reps: cfg.repMax },
-            label: `${setCount + 1} sets × ${cfg.repMin}–${cfg.repMax} @ ${w} kg`,
-            advice: `All ${setCount} sets hit ${cfg.repMax}. Add a set — go for ${setCount + 1} × ${w} kg.`,
+            label: `${setCount + 1} × ${cfg.repMin}–${cfg.repMax} @ ${w} ק"ג`,
+            advice: `כל ${setCount} הסטים הגיעו ל־${cfg.repMax}. הוסף סט — ${setCount + 1} סטים ב־${w} ק"ג.`,
             action: 'add_set'
           };
         }
@@ -1265,8 +1440,8 @@
         return {
           cfg, lastWeight: w,
           target: { weight: next, sets: cfg.minSets, reps: cfg.repMin },
-          label: `${cfg.minSets} sets × ${cfg.repMin}–${cfg.repMax} @ ${next} kg`,
-          advice: `Ceiling reached at ${w} kg. Move up to ${next} kg and restart at ${cfg.repMin} reps.`,
+          label: `${cfg.minSets} × ${cfg.repMin}–${cfg.repMax} @ ${next} ק"ג`,
+          advice: `הגעת לתקרה ב־${w} ק"ג. עלה ל־${next} ק"ג והתחל מ־${cfg.repMin} חזרות.`,
           action: 'increase_weight'
         };
       }
@@ -1275,15 +1450,41 @@
       return {
         cfg, lastWeight: w,
         target: { weight: w, sets: Math.max(setCount, cfg.minSets), reps: Math.min(lowest + 1, cfg.repMax) },
-        label: `${Math.max(setCount, cfg.minSets)} sets × ${cfg.repMin}–${cfg.repMax} @ ${w} kg`,
-        advice: `Stay at ${w} kg and add reps — beat ${topSets.map(s => s.reps).join(', ')}.`,
+        label: `${Math.max(setCount, cfg.minSets)} × ${cfg.repMin}–${cfg.repMax} @ ${w} ק"ג`,
+        advice: `הישאר ב־${w} ק"ג והוסף חזרות — תשבור את ${topSets.map(s => s.reps).join(', ')}.`,
         action: 'add_reps'
       };
     }
 
-    // Same working weight with no rep improvement over the last 3 sessions.
+    /* Deload numbers come from the engine, never from the model: it does not
+       know your working weight and cannot round to plates you own. */
+    function computeDeload(entry, history) {
+      const cfg = normalizeEntry(entry);
+      const last = history[history.length - 1];
+      const pct = deloadPct();
+
+      if (!last) {
+        return { cfg, target: null, pct, label: `דילואוד · ${cfg.minSets} × ${cfg.repMin}`,
+                 advice: 'שבוע קל. קח משקל נוח ואל תתקרב לכשל.' };
+      }
+
+      const w = workingWeight(last.sets);
+      const inc = cfg.increment;
+      const target = Math.max(inc, Math.round((w * pct / 100) / inc) * inc);
+
+      return {
+        cfg, pct, lastWeight: w,
+        target: { weight: target, sets: cfg.minSets, reps: cfg.repMin },
+        label: `דילואוד · ${cfg.minSets} × ${cfg.repMin} @ ${target} ק"ג`,
+        advice: `שבוע קל — ${pct}% מ־${w} ק"ג. עוצרים הרחק מכשל.`,
+        action: 'deload'
+      };
+    }
+
+    /* A light week is not a plateau, and neither is today's unfinished work —
+       so plateau detection reads the same filtered history as the engine. */
     function detectPlateau(exName) {
-      const h = getExerciseHistory(exName);
+      const h = getProgressionHistory(exName);
       if (h.length < 3) return false;
       const recent = h.slice(-3);
       const w = workingWeight(recent[0].sets);
@@ -1301,6 +1502,8 @@
     let toastTimer = null;
     let historyPickedProgram = null;
     let openSessionId = null;
+    let workoutModeOverride = null;   // deload/full chosen for today, before a session exists
+    let coachBusy = false;
 
     document.addEventListener("DOMContentLoaded", () => {
       migrateData();
@@ -1412,6 +1615,7 @@
       localStorage.setItem('fit_sessions', JSON.stringify(window.sessions));
       localStorage.setItem('fit_program_order', JSON.stringify(window.programOrder));
       localStorage.setItem('fit_coach_tips', JSON.stringify(window.coachTips));
+      localStorage.setItem('fit_deload_week', JSON.stringify(window.deloadWeek));
       if (!skipCloudSync && window.syncToCloud) window.syncToCloud();
     }
 
@@ -1969,6 +2173,7 @@
       }
 
       optBtn.style.display = 'inline-block';
+      workoutModeOverride = null;   // each program picks its own default for today
       renderWorkoutSession(selected);
     }
 
@@ -1976,88 +2181,169 @@
       const container = document.getElementById('active-workout-container');
       const entries = window.programs[program].map(normalizeEntry);
       const saved = getTodaySession(program);
+      const mode = getWorkoutMode(program);
+      const week = activeLightWeek();
+      const tips = (window.coachTips.byProgram || {})[program] || null;
 
-      const deload = window.coachTips && window.coachTips.deload;
-      const banner = deload && deload.recommended
-        ? `<div class="coach-banner deload">
-             <strong>Deload suggested</strong>
-             <span>${escapeHtml(deload.reason || 'Your recent sessions suggest accumulated fatigue.')}</span>
-           </div>`
-        : '';
-
-      let html = `
-        <div class="session-head">
-          <div>
-            <span class="session-date">${formatDate(todayStr())}</span>
-            <small>${saved ? 'Session already logged today — edit and save again to update it.' : 'New session'}</small>
-          </div>
-          ${saved ? '<span class="badge-done">Logged</span>' : ''}
-        </div>
-        ${banner}
-      `;
+      let html = sessionHeadHtml(program, saved, mode, week)
+               + lightWeekBannerHtml(program, week, mode)
+               + coachBarHtml(program, tips)
+               + guidanceBannerHtml(tips);
 
       entries.forEach((entry, idx) => {
-        const history = getExerciseHistory(entry.name);
-        const prog = computeProgression(entry, history);
-        const best = getExerciseBest(entry.name);
-        const last = history[history.length - 1];
-        const savedSets = saved ? ((saved.exercises.find(e => e.name === entry.name) || {}).sets || []) : [];
-        const tip = getCoachTip(entry.name);
-        const plateau = detectPlateau(entry.name);
+        const history = getProgressionHistory(entry.name);
+        const plan = mode === 'deload'
+          ? computeDeload(entry, history)
+          : computeProgression(entry, history);
 
-        // Pre-fill from the progression target so the user starts from the right weight.
-        const suggestedWeight = prog.target ? prog.target.weight : '';
-        const rowCount = Math.max(savedSets.length, prog.target ? prog.target.sets : entry.minSets, 1);
+        const best = getExerciseBest(entry.name);
+        const last = getExerciseHistory(entry.name).filter(h => h.date < todayStr()).pop();
+        const savedSets = saved ? ((saved.exercises.find(e => e.name === entry.name) || {}).sets || []) : [];
+        const tip = getCoachTip(program, entry.name);
+        const plateau = mode !== 'deload' && detectPlateau(entry.name);
+
+        const targetWeight = plan.target ? plan.target.weight : '';
+        const rowCount = Math.max(savedSets.length, plan.target ? plan.target.sets : entry.minSets, 1);
 
         let setRows = '';
         for (let i = 0; i < rowCount; i++) {
-          const s = savedSets[i];
-          const done = !!s;
-          setRows += `
-            <div class="set-row${done ? ' done' : ''}">
-              <span>${done ? '✓' : ''} Set ${i + 1}</span>
-              <input type="number" inputmode="decimal" placeholder="kg" class="w-${idx}"
-                     value="${s ? s.weight : ''}" data-suggest="${suggestedWeight}">
-              <input type="number" inputmode="numeric" placeholder="reps" class="r-${idx}"
-                     value="${s ? s.reps : ''}">
-            </div>`;
+          setRows += setRowHtml(idx, i, savedSets[i], targetWeight);
         }
 
         html += `
-          <div class="card exercise-card">
+          <div class="card exercise-card${mode === 'deload' ? ' is-deload' : ''}">
             <div class="ex-head">
               <span class="reorder-handle">
-                <button class="btn-icon" ${idx === 0 ? 'disabled' : ''} onclick="moveTrackerExercise('${jsAttr(program)}', ${idx}, -1)" aria-label="Move up">▲</button>
-                <button class="btn-icon" ${idx === entries.length - 1 ? 'disabled' : ''} onclick="moveTrackerExercise('${jsAttr(program)}', ${idx}, 1)" aria-label="Move down">▼</button>
+                <button class="btn-icon" ${idx === 0 ? 'disabled' : ''} onclick="moveTrackerExercise('${jsAttr(program)}', ${idx}, -1)" aria-label="העלה למעלה">▲</button>
+                <button class="btn-icon" ${idx === entries.length - 1 ? 'disabled' : ''} onclick="moveTrackerExercise('${jsAttr(program)}', ${idx}, 1)" aria-label="הורד למטה">▼</button>
               </span>
               <h3>${idx + 1}. ${escapeHtml(entry.name)}</h3>
             </div>
 
             <div class="target-line">
-              <span class="target-chip">Target: ${escapeHtml(prog.label)}</span>
-              ${plateau ? '<span class="target-chip warn">Plateau</span>' : ''}
+              <span class="target-chip${mode === 'deload' ? ' deload' : ''}">${escapeHtml(plan.label)}</span>
+              ${plateau ? '<span class="target-chip warn">תקוע</span>' : ''}
             </div>
-            <p class="advice">${escapeHtml(prog.advice)}</p>
+            <p class="advice">${escapeHtml(plan.advice)}</p>
 
             <div class="pr-line">
-              <span><b>Best:</b> ${best ? `${best.weight} kg × ${best.reps} <small>(${formatDate(best.date)})</small>` : '—'}</span>
-              <span><b>Last:</b> ${last ? `${escapeHtml(describeSets(last.sets))} <small>(${formatDate(last.date)})</small>` : '—'}</span>
+              <span><b>שיא:</b> ${best ? `<bdi>${best.weight} ק"ג × ${best.reps}</bdi> <small><bdi>${formatDate(best.date)}</bdi></small>` : '—'}</span>
+              <span><b>אחרון:</b> ${last ? `<bdi>${escapeHtml(describeSets(last.sets))}</bdi> <small><bdi>${formatDate(last.date)}</bdi></small>` : '—'}</span>
             </div>
 
-            ${tip ? `<div class="coach-tip"><b>Coach:</b> ${escapeHtml(tip)}</div>` : ''}
+            ${tip ? `<div class="coach-tip"><b>המאמן:</b> ${escapeHtml(tip)}</div>` : ''}
 
-            <div id="sets-box-${idx}">${setRows}</div>
-            <button class="btn-add-set" onclick="addSetRowToSession(${idx})">+ Add Set</button>
+            <div id="sets-box-${idx}" data-target="${targetWeight}">${setRows}</div>
+            <button class="btn-add-set" onclick="addSetRowToSession(${idx})">+ הוסף סט</button>
           </div>`;
       });
 
-      html += `<button class="btn-primary" onclick="finishWorkoutSession()">${saved ? 'Update Session' : 'Complete & Save Session'}</button>`;
+      html += `<button class="btn-primary" onclick="finishWorkoutSession()">סיים אימון</button>`;
       container.innerHTML = html;
+    }
 
-      // Prefill empty weight fields with the progression target.
-      container.querySelectorAll('input[data-suggest]').forEach(inp => {
-        if (!inp.value && inp.dataset.suggest) inp.placeholder = `${inp.dataset.suggest} kg`;
-      });
+    function sessionHeadHtml(program, saved, mode, week) {
+      const setCount = saved ? saved.exercises.reduce((n, e) => n + (e.sets || []).length, 0) : 0;
+      return `
+        <div class="session-head">
+          <div>
+            <span class="session-date">${formatDate(todayStr())}</span>
+            <small>${saved ? `${setCount} סטים נרשמו היום` : 'אימון חדש'}</small>
+          </div>
+          ${saved ? '<span class="badge-done">נשמר</span>' : ''}
+        </div>`;
+    }
+
+    /* The week sets the default, but the day decides. Flipping to a full
+       workout restores the real working weights without cancelling the week. */
+    function lightWeekBannerHtml(program, week, mode) {
+      if (!week) return '';
+
+      if (week.type === 'rest') {
+        return `
+          <div class="coach-banner rest">
+            <strong>שבוע מנוחה · <bdi dir="ltr">${formatDate(week.start)}–${formatDate(week.end)}</bdi></strong>
+            <span>${escapeHtml(week.reason || 'המאמן המליץ על שבוע ללא אימונים.')} אימנת בכל זאת? זה נרשם כאימון רגיל.</span>
+            <div class="banner-actions">
+              <button class="chip-btn" onclick="endLightWeek()">בטל סימון</button>
+            </div>
+          </div>`;
+      }
+
+      return `
+        <div class="light-week">
+          <div class="lw-head">
+            <strong>שבוע דילואוד</strong>
+            <span dir="ltr">${formatDate(week.start)}–${formatDate(week.end)}</span>
+          </div>
+          <div class="mode-toggle" role="group" aria-label="סוג האימון היום">
+            <button class="${mode === 'deload' ? 'on' : ''}" onclick="setWorkoutMode('${jsAttr(program)}', 'deload')">דילואוד</button>
+            <button class="${mode === 'full' ? 'on' : ''}" onclick="setWorkoutMode('${jsAttr(program)}', 'full')">אימון מלא</button>
+          </div>
+          <div class="lw-foot">
+            <label for="deload-pct">אחוז</label>
+            <input type="number" id="deload-pct" min="40" max="95" step="5" value="${deloadPct()}"
+                   onchange="setDeloadPct(this.value)" aria-label="אחוז דילואוד">
+            <button class="chip-btn" onclick="endLightWeek()">סיים עכשיו</button>
+          </div>
+        </div>`;
+    }
+
+    function coachBarHtml(program, tips) {
+      const fresh = tips && tips.updatedAt ? freshnessLabel(tips.updatedAt) : 'עוד לא ביקשת עצה';
+      return `
+        <div class="coach-bar">
+          <button class="coach-btn" onclick="askCoach('${jsAttr(program)}')" ${coachBusy ? 'disabled' : ''}>
+            ${coachBusy ? 'מנתח…' : 'בקש עצה מהמאמן'}
+          </button>
+          <small>${escapeHtml(fresh)}</small>
+        </div>`;
+    }
+
+    function freshnessLabel(iso) {
+      const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+      if (days <= 0) return 'עודכן היום';
+      if (days === 1) return 'עודכן אתמול';
+      return `עודכן לפני ${days} ימים`;
+    }
+
+    // Deload and rest are recommendations until you accept them.
+    function guidanceBannerHtml(tips) {
+      const g = tips && tips.guidance;
+      if (!g || !g.type || g.type === 'none') return '';
+      if (activeLightWeek()) return '';   // already acted on
+
+      const isRest = g.type === 'rest';
+      return `
+        <div class="coach-banner ${isRest ? 'rest' : 'deload'}">
+          <strong>${isRest ? 'המאמן ממליץ על שבוע מנוחה' : 'המאמן ממליץ על דילואוד'}</strong>
+          <span>${escapeHtml(g.reason || '')}</span>
+          <div class="banner-actions">
+            <button class="chip-btn" onclick="startLightWeek('${isRest ? 'rest' : 'deload'}', 0)">השבוע</button>
+            <button class="chip-btn" onclick="startLightWeek('${isRest ? 'rest' : 'deload'}', 1)">משבוע הבא</button>
+          </div>
+        </div>`;
+    }
+
+    /* A confirmed set is locked, green and already persisted; an open row is
+       editable. The weight is a real value, not a hint, because saving needs
+       a number there — a grey placeholder got sets discarded silently. */
+    function setRowHtml(exIdx, setIdx, savedSet, targetWeight) {
+      const done = !!savedSet;
+      const w = done ? savedSet.weight : (targetWeight !== '' ? targetWeight : '');
+      const r = done ? savedSet.reps : '';
+      const auto = !done && targetWeight !== '';
+      return `
+        <div class="set-row${done ? ' done' : ''}" data-set="${setIdx}">
+          <span>סט ${setIdx + 1}</span>
+          <input type="number" inputmode="decimal" placeholder='ק"ג' class="w-${exIdx}${auto ? ' auto' : ''}"
+                 value="${w}" ${done ? 'readonly' : ''} oninput="this.classList.remove('auto')">
+          <input type="number" inputmode="numeric" placeholder="חזרות" class="r-${exIdx}"
+                 value="${r}" ${done ? 'readonly' : ''}>
+          <button class="set-ok${done ? ' on' : ''}" onclick="toggleSetConfirm(${exIdx}, ${setIdx})"
+                  aria-label="${done ? 'פתח לעריכה' : 'אשר סט'}">✓</button>
+          <button class="set-del" onclick="deleteTrackerSet(${exIdx}, ${setIdx})" aria-label="מחק סט">✕</button>
+        </div>`;
     }
 
     function moveTrackerExercise(program, idx, delta) {
@@ -2068,61 +2354,172 @@
       renderManageProgramsList();
     }
 
+    // A new row carries the same weight as the row above it — the usual case
+    // between sets. It is a row for a set you chose to do, never one added for you.
     function addSetRowToSession(exIdx) {
       const box = document.getElementById(`sets-box-${exIdx}`);
-      const setNum = box.children.length + 1;
-      const suggest = (box.querySelector('input[data-suggest]') || {}).dataset?.suggest || '';
-      box.insertAdjacentHTML('beforeend', `
-        <div class="set-row">
-          <span>Set ${setNum}</span>
-          <input type="number" inputmode="decimal" placeholder="${suggest ? suggest + ' kg' : 'kg'}" class="w-${exIdx}" data-suggest="${suggest}">
-          <input type="number" inputmode="numeric" placeholder="reps" class="r-${exIdx}">
-        </div>
-      `);
+      const rows = box.querySelectorAll('.set-row');
+      const lastW = rows.length ? rows[rows.length - 1].querySelector(`.w-${exIdx}`).value : '';
+      const weight = lastW || box.dataset.target || '';
+      box.insertAdjacentHTML('beforeend', setRowHtml(exIdx, rows.length, null, weight));
     }
 
-    function collectSessionExercises(program) {
-      const entries = window.programs[program].map(normalizeEntry);
-      const out = [];
-      entries.forEach((entry, idx) => {
-        const weights = document.querySelectorAll(`.w-${idx}`);
-        const reps = document.querySelectorAll(`.r-${idx}`);
-        const sets = [];
-        weights.forEach((wIn, i) => {
-          const w = parseFloat(wIn.value);
-          const r = reps[i] ? parseInt(reps[i].value, 10) : NaN;
-          if (!isNaN(w) && !isNaN(r)) sets.push({ weight: w, reps: r });
-        });
-        if (sets.length) out.push({ name: entry.name, sets });
-      });
-      return out;
+    function currentProgram() {
+      return document.getElementById('select-active-program').value;
     }
 
-    // Saving is an upsert on program+date, so re-saving edits today's session
-    // instead of appending a duplicate — and the entered sets stay on screen.
-    function finishWorkoutSession() {
-      const program = document.getElementById('select-active-program').value;
-      if (!program) return;
-
-      const exercises = collectSessionExercises(program);
-      if (!exercises.length) return window.showToast('Log at least one set before saving.', true);
-
-      const existing = getTodaySession(program);
-      if (existing) {
-        existing.exercises = exercises;
-      } else {
-        window.sessions.push({
+    function ensureTodaySession(program) {
+      let s = getTodaySession(program);
+      if (!s) {
+        s = {
           id: `s_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
           program,
           date: todayStr(),
-          exercises
-        });
+          deload: getWorkoutMode(program) === 'deload',
+          exercises: []
+        };
+        window.sessions.push(s);
       }
+      return s;
+    }
+
+    function readSetRow(exIdx, setIdx) {
+      const box = document.getElementById(`sets-box-${exIdx}`);
+      const row = box.querySelectorAll('.set-row')[setIdx];
+      if (!row) return null;
+      const w = parseFloat(row.querySelector(`.w-${exIdx}`).value);
+      const r = parseInt(row.querySelector(`.r-${exIdx}`).value, 10);
+      return { row, weight: w, reps: r };
+    }
+
+    /* Confirming writes the set to storage immediately, so closing the app
+       mid-workout can no longer lose it. Confirming again reopens the row. */
+    function toggleSetConfirm(exIdx, setIdx) {
+      const program = currentProgram();
+      if (!program) return;
+      const entry = normalizeEntry(window.programs[program][exIdx]);
+      const read = readSetRow(exIdx, setIdx);
+      if (!read) return;
+
+      const session = getTodaySession(program);
+      const exRec = session ? session.exercises.find(e => e.name === entry.name) : null;
+      const alreadyDone = exRec && exRec.sets[setIdx] !== undefined && read.row.classList.contains('done');
+
+      if (alreadyDone) {
+        exRec.sets.splice(setIdx, 1);
+        if (!exRec.sets.length) session.exercises = session.exercises.filter(e => e !== exRec);
+        pruneEmptySession(session);
+        saveLocal();
+        renderWorkoutSession(program);
+        return;
+      }
+
+      if (isNaN(read.weight)) return window.showToast('רשום משקל לפני אישור הסט.', true);
+      if (isNaN(read.reps)) return window.showToast('רשום חזרות לפני אישור הסט.', true);
+
+      const s = ensureTodaySession(program);
+      let rec = s.exercises.find(e => e.name === entry.name);
+      if (!rec) { rec = { name: entry.name, sets: [] }; s.exercises.push(rec); }
+      rec.sets[setIdx] = { weight: read.weight, reps: read.reps };
+      rec.sets = rec.sets.filter(Boolean);
 
       saveLocal();
       renderWorkoutSession(program);
       renderHistoryPrograms();
-      window.showToast(existing ? 'Session updated.' : 'Workout session saved.');
+    }
+
+    function deleteTrackerSet(exIdx, setIdx) {
+      const program = currentProgram();
+      if (!program) return;
+      const entry = normalizeEntry(window.programs[program][exIdx]);
+      const session = getTodaySession(program);
+      const exRec = session ? session.exercises.find(e => e.name === entry.name) : null;
+
+      if (exRec && exRec.sets[setIdx] !== undefined) {
+        exRec.sets.splice(setIdx, 1);
+        if (!exRec.sets.length) session.exercises = session.exercises.filter(e => e !== exRec);
+        pruneEmptySession(session);
+        saveLocal();
+        renderWorkoutSession(program);
+        renderHistoryPrograms();
+        return;
+      }
+
+      // Never saved — just drop the row.
+      const box = document.getElementById(`sets-box-${exIdx}`);
+      const row = box.querySelectorAll('.set-row')[setIdx];
+      if (row) row.remove();
+      renumberSetRows(exIdx);
+    }
+
+    function renumberSetRows(exIdx) {
+      const box = document.getElementById(`sets-box-${exIdx}`);
+      box.querySelectorAll('.set-row').forEach((row, i) => {
+        row.dataset.set = i;
+        row.querySelector('span').textContent = `סט ${i + 1}`;
+        row.querySelector('.set-ok').setAttribute('onclick', `toggleSetConfirm(${exIdx}, ${i})`);
+        row.querySelector('.set-del').setAttribute('onclick', `deleteTrackerSet(${exIdx}, ${i})`);
+      });
+    }
+
+    function pruneEmptySession(session) {
+      if (session && !session.exercises.length) {
+        window.sessions = window.sessions.filter(s => s !== session);
+      }
+    }
+
+    /* Finishing sweeps up anything typed but not confirmed, so a forgotten
+       check mark never costs you the set. */
+    function finishWorkoutSession() {
+      const program = currentProgram();
+      if (!program) return;
+
+      const entries = window.programs[program].map(normalizeEntry);
+      const session = ensureTodaySession(program);
+      let added = 0, incomplete = 0;
+
+      entries.forEach((entry, idx) => {
+        const box = document.getElementById(`sets-box-${idx}`);
+        if (!box) return;
+        const rows = box.querySelectorAll('.set-row');
+        const collected = [];
+
+        rows.forEach((row, i) => {
+          const w = parseFloat(row.querySelector(`.w-${idx}`).value);
+          const r = parseInt(row.querySelector(`.r-${idx}`).value, 10);
+          if (!isNaN(w) && !isNaN(r)) {
+            if (!row.classList.contains('done')) added++;
+            collected.push({ weight: w, reps: r });
+          } else if (!isNaN(w) || !isNaN(r)) {
+            incomplete++;   // half-filled: report it rather than dropping it silently
+          }
+        });
+
+        const existing = session.exercises.find(e => e.name === entry.name);
+        if (collected.length) {
+          if (existing) existing.sets = collected;
+          else session.exercises.push({ name: entry.name, sets: collected });
+        } else if (existing) {
+          session.exercises = session.exercises.filter(e => e !== existing);
+        }
+      });
+
+      if (!session.exercises.length) {
+        pruneEmptySession(session);
+        saveLocal();
+        return window.showToast('רשום לפחות סט אחד לפני שמירה.', true);
+      }
+
+      session.deload = getWorkoutMode(program) === 'deload';
+      saveLocal();
+      renderWorkoutSession(program);
+      renderHistoryPrograms();
+
+      if (incomplete) {
+        window.showToast(`נשמר. ${incomplete} שורות חלקיות לא נשמרו — חסר משקל או חזרות.`, true);
+      } else {
+        window.showToast(added ? `האימון נשמר. ${added} סטים נוספו.` : 'האימון נשמר.');
+      }
     }
 
     /* ---------------- workout history browser ---------------- */
@@ -2464,20 +2861,22 @@
         || JSON.stringify(data, null, 2);
     }
 
-    function getCoachTip(exName) {
-      if (!window.coachTips || !Array.isArray(window.coachTips.exercises)) return null;
-      const hit = window.coachTips.exercises.find(e => e.name === exName);
+    function getCoachTip(program, exName) {
+      const tips = (window.coachTips.byProgram || {})[program];
+      if (!tips || !Array.isArray(tips.exercises)) return null;
+      const hit = tips.exercises.find(e => e.name === exName);
       return hit ? hit.detail : null;
     }
 
     // Everything the coach needs: the configured scheme, what the deterministic
     // engine already decided, and the recent sets — so the model reasons about
     // judgement calls rather than re-deriving arithmetic it would get wrong.
-    function buildCoachPayload() {
+    function buildCoachPayload(onlyProgram) {
       const out = [];
-      orderedProgramNames().forEach(pName => {
-        window.programs[pName].map(normalizeEntry).forEach(entry => {
-          const history = getExerciseHistory(entry.name);
+      const names = onlyProgram ? [onlyProgram] : orderedProgramNames();
+      names.forEach(pName => {
+        (window.programs[pName] || []).map(normalizeEntry).forEach(entry => {
+          const history = getProgressionHistory(entry.name);
           if (!history.length) return;
           const prog = computeProgression(entry, history);
           out.push({
@@ -2498,58 +2897,100 @@
 
     const COACH_SCHEMA_HINT = `Return ONLY JSON matching:
 {
-  "overall": "2-3 sentence summary",
-  "deload": { "recommended": true|false, "reason": "..." },
+  "overall": "2-3 sentence summary, in Hebrew",
+  "guidance": { "type": "deload" | "rest" | "none", "reason": "short reason, in Hebrew" },
   "exercises": [
-    { "name": "<exact exercise name>",
+    { "name": "<exact exercise name, copied verbatim from the data>",
       "action": "increase_weight" | "add_set" | "add_reps" | "dropset" | "swap" | "hold",
-      "detail": "one short actionable sentence" }
+      "detail": "one short actionable sentence, in Hebrew" }
   ]
 }`;
 
-    async function runAiAnalysis() {
-      const payload = buildCoachPayload();
-      if (!payload.length) return window.showToast('Log a few workouts first so there is data to analyze.', true);
-
-      const card = document.getElementById('ai-response-card');
-      const textEl = document.getElementById('ai-response-text');
-      card.style.display = 'block';
-      textEl.innerText = 'Analyzing your workouts and progress...';
-
-      const prompt = `You are an elite strength & hypertrophy coach guiding a lifter who trains with Double Progression and Triple Progression.
+    const COACH_PROMPT_HEAD = `You are an elite strength & hypertrophy coach guiding a lifter who trains with Double Progression and Triple Progression.
 
 Double Progression: keep the same weight until every set reaches the top of the rep range, then add weight and restart at the bottom of the range.
 Triple Progression: same, but when every set reaches the top of the range, first add a set (up to the max), and only once the max set count is also at the top of the range does the weight go up.
 
-A deterministic engine already computed the routine next step for each exercise ("engineSuggestion"). Do not repeat simple arithmetic — focus on judgement:
+A deterministic engine already computed the routine next step for each exercise ("engineSuggestion"), and the app computes deload loads itself. Do not do arithmetic and do not propose specific weights — focus on judgement:
 - when a lifter is stalling and should add a set (moving Double toward Triple),
 - when to finish an exercise with a drop set for extra intensity,
 - when an exercise has stopped working and should be swapped,
-- when accumulated fatigue calls for a deload week or a rest week.
+- when accumulated fatigue calls for a deload week ("deload") or a full rest week ("rest").
+
+Write every user-facing string in Hebrew.`;
+
+    // Called from the workout screen, scoped to the program being trained.
+    async function askCoach(program) {
+      if (coachBusy) return;
+      const payload = buildCoachPayload(program);
+      if (!payload.length) {
+        return window.showToast('אין עדיין מספיק היסטוריה באימון הזה כדי לנתח.', true);
+      }
+
+      coachBusy = true;
+      renderWorkoutSession(program);
+      window.showToast('שואל את המאמן…');
+
+      try {
+        const advice = await requestCoachAdvice(payload);
+        if (!advice) throw new Error('לא הצלחתי לקרוא את התשובה.');
+        advice.updatedAt = new Date().toISOString();
+        window.coachTips.byProgram[program] = advice;
+        saveLocal();
+        window.showToast('העצה עודכנה.');
+      } catch (e) {
+        window.showToast('לא הצלחתי לקבל עצה: ' + e.message, true);
+      } finally {
+        coachBusy = false;
+        renderWorkoutSession(program);
+      }
+    }
+
+    async function requestCoachAdvice(payload) {
+      const prompt = `${COACH_PROMPT_HEAD}
 
 Training data:
 ${JSON.stringify(payload, null, 2)}
 
 ${COACH_SCHEMA_HINT}`;
 
-      try {
-        const raw = getAiProvider() === 'gemini'
-          ? await callGemini(prompt, true)
-          : await callCustomEndpoint(prompt);
+      const raw = getAiProvider() === 'gemini'
+        ? await callGemini(prompt, true)
+        : await callCustomEndpoint(prompt);
+      return parseCoachJson(raw);
+    }
 
-        const parsed = parseCoachJson(raw);
-        if (parsed) {
-          window.coachTips = parsed;
-          saveLocal();
-          renderCoachSummary(parsed, textEl);
-          const program = document.getElementById('select-active-program').value;
-          if (program && window.programs[program]) renderWorkoutSession(program);
-          window.showToast('Coach advice updated — tips now show inside your workout.');
-        } else {
-          textEl.innerText = raw || 'No response received from the AI coach.';
-        }
+    // The AI Coach screen keeps a whole-training-plan view across all programs.
+    async function runAiAnalysis() {
+      const payload = buildCoachPayload(null);
+      if (!payload.length) return window.showToast('רשום כמה אימונים קודם כדי שיהיה מה לנתח.', true);
+
+      const card = document.getElementById('ai-response-card');
+      const textEl = document.getElementById('ai-response-text');
+      card.style.display = 'block';
+      textEl.innerText = 'מנתח את האימונים וההתקדמות…';
+
+      try {
+        const advice = await requestCoachAdvice(payload);
+        if (!advice) { textEl.innerText = 'לא הצלחתי לקרוא את התשובה מהמאמן.'; return; }
+
+        advice.updatedAt = new Date().toISOString();
+        // Fan the advice out to each program so it also shows inside the workout.
+        orderedProgramNames().forEach(pName => {
+          const forProgram = (advice.exercises || []).filter(e =>
+            (window.programs[pName] || []).some(x => normalizeEntry(x).name === e.name));
+          if (forProgram.length) {
+            window.coachTips.byProgram[pName] = { ...advice, exercises: forProgram };
+          }
+        });
+
+        saveLocal();
+        renderCoachSummary(advice, textEl);
+        const program = currentProgram();
+        if (program && window.programs[program]) renderWorkoutSession(program);
+        window.showToast('העצה עודכנה — הטיפים מופיעים בתוך האימון.');
       } catch (e) {
-        textEl.innerText = 'Error connecting to the AI coach: ' + e.message;
+        textEl.innerText = 'שגיאה בחיבור למאמן: ' + e.message;
       }
     }
 
@@ -2565,38 +3006,57 @@ ${COACH_SCHEMA_HINT}`;
       for (const a of attempts) {
         try {
           const obj = JSON.parse(a);
-          if (obj && (obj.overall || obj.exercises || obj.deload)) return obj;
+          if (obj && (obj.overall || obj.exercises || obj.guidance || obj.deload)) return normalizeAdvice(obj);
         } catch (e) { /* try the next shape */ }
       }
       return null;
     }
 
+    // Accept the older {deload:{recommended}} shape as well as {guidance:{type}}.
+    function normalizeAdvice(obj) {
+      if (!obj.guidance && obj.deload) {
+        obj.guidance = { type: obj.deload.recommended ? 'deload' : 'none', reason: obj.deload.reason || '' };
+      }
+      if (obj.guidance && !['deload', 'rest', 'none'].includes(obj.guidance.type)) {
+        obj.guidance.type = 'none';
+      }
+      return obj;
+    }
+
     const ACTION_LABEL = {
-      increase_weight: 'Add weight',
-      add_set: 'Add a set',
-      add_reps: 'Add reps',
-      dropset: 'Finish with a drop set',
-      swap: 'Swap exercise',
-      hold: 'Hold steady'
+      increase_weight: 'העלה משקל',
+      add_set: 'הוסף סט',
+      add_reps: 'הוסף חזרות',
+      dropset: 'סיים בדרופ סט',
+      swap: 'החלף תרגיל',
+      hold: 'השאר כמו שזה'
     };
 
     function renderCoachSummary(tips, el) {
       let html = '';
       if (tips.overall) html += `<p style="margin-bottom:12px;">${escapeHtml(tips.overall)}</p>`;
-      if (tips.deload && tips.deload.recommended) {
-        html += `<div class="coach-banner deload" style="margin-bottom:12px;">
-                   <strong>Deload recommended</strong>
-                   <span>${escapeHtml(tips.deload.reason || '')}</span>
+
+      const g = tips.guidance;
+      if (g && g.type && g.type !== 'none') {
+        const isRest = g.type === 'rest';
+        html += `<div class="coach-banner ${isRest ? 'rest' : 'deload'}" style="margin-bottom:12px;">
+                   <strong>${isRest ? 'מומלץ שבוע מנוחה' : 'מומלץ דילואוד'}</strong>
+                   <span>${escapeHtml(g.reason || '')}</span>
+                   <div class="banner-actions">
+                     <button class="chip-btn" onclick="startLightWeek('${isRest ? 'rest' : 'deload'}', 0)">השבוע</button>
+                     <button class="chip-btn" onclick="startLightWeek('${isRest ? 'rest' : 'deload'}', 1)">משבוע הבא</button>
+                   </div>
                  </div>`;
       }
+
       if (Array.isArray(tips.exercises) && tips.exercises.length) {
         html += tips.exercises.map(e => `
           <div class="coach-row">
-            <span class="action-chip action-${escapeHtml(e.action || 'hold')}">${escapeHtml(ACTION_LABEL[e.action] || e.action || 'Note')}</span>
+            <span class="action-chip action-${escapeHtml(e.action || 'hold')}">${escapeHtml(ACTION_LABEL[e.action] || e.action || 'הערה')}</span>
             <span><b>${escapeHtml(e.name || '')}</b> — ${escapeHtml(e.detail || '')}</span>
           </div>`).join('');
       }
-      el.innerHTML = html || 'No advice returned.';
+      el.innerHTML = html || 'לא התקבלה עצה.';
     }
 
     function populateAnalyticsPicker() {
