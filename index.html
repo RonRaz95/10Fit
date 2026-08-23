@@ -553,17 +553,6 @@
     .exercise-card.is-deload { border-color: var(--teal); }
     .target-chip.deload { background: rgba(79,209,197,0.12); color: var(--teal); border-color: var(--teal); }
 
-    /* The tracker text is Hebrew, so it reads right-to-left; numbers and dates
-       inside it are isolated with <bdi> so bidi cannot reorder them. */
-    #active-workout-container { direction: rtl; text-align: right; }
-    /* A target reads as a formula (2 × 6–10 @ 52.5) — left-to-right, or bidi
-       flips the rep range into 10–6. */
-    .target-chip { direction: ltr; unicode-bidi: isolate; }
-    #active-workout-container .advice,
-    #active-workout-container .pr-line,
-    #active-workout-container .coach-tip { text-align: right; }
-    #active-workout-container input { direction: ltr; text-align: center; }
-    .startdate-ltr, .pr-line small { unicode-bidi: isolate; }
   </style>
 </head>
 <body>
@@ -1313,11 +1302,10 @@
       saveLocal();
       const program = document.getElementById('select-active-program').value;
       if (program && window.programs[program]) renderWorkoutSession(program);
-      // Toasts are plain text, so isolate the range or bidi renders it backwards.
-      const range = `⁦${formatDate(start)}–${formatDate(end)}⁩`;
+      const range = `${formatDate(start)}–${formatDate(end)}`;
       window.showToast(type === 'rest'
-        ? `שבוע מנוחה מסומן: ${range}`
-        : `שבוע דילואוד פעיל: ${range}`);
+        ? `Rest week marked: ${range}`
+        : `Deload week active: ${range}`);
     }
 
     function endLightWeek() {
@@ -1326,12 +1314,12 @@
       saveLocal();
       const program = document.getElementById('select-active-program').value;
       if (program && window.programs[program]) renderWorkoutSession(program);
-      window.showToast('חזרה לאימון רגיל.');
+      window.showToast('Back to normal training.');
     }
 
     function setDeloadPct(value) {
       const v = parseInt(value, 10);
-      if (!(v >= 40 && v <= 95)) return window.showToast('אחוז דילואוד חייב להיות בין 40 ל־95.', true);
+      if (!(v >= 40 && v <= 95)) return window.showToast('Deload percentage must be between 40 and 95.', true);
       localStorage.setItem('fit_deload_pct', String(v));
       const program = document.getElementById('select-active-program').value;
       if (program && window.programs[program]) renderWorkoutSession(program);
@@ -1397,7 +1385,7 @@
       const w = sets[0].weight;
       const sameWeight = sets.every(s => s.weight === w);
       return sameWeight
-        ? `${w} ק"ג × ${sets.map(s => s.reps).join(', ')}`
+        ? `${w} kg × ${sets.map(s => s.reps).join(', ')}`
         : sets.map(s => `${s.weight}×${s.reps}`).join(' | ');
     }
 
@@ -1416,8 +1404,8 @@
         return {
           cfg,
           target: null,
-          label: `${cfg.minSets} × ${cfg.repMin}–${cfg.repMax}`,
-          advice: `פעם ראשונה בתרגיל — בחר משקל שאתה מחזיק בו ${cfg.repMin}–${cfg.repMax} חזרות.`
+          label: `${cfg.minSets} sets × ${cfg.repMin}–${cfg.repMax} reps`,
+          advice: `First time here — pick a weight you can hold for ${cfg.repMin}–${cfg.repMax} reps.`
         };
       }
 
@@ -1431,8 +1419,8 @@
           return {
             cfg, lastWeight: w,
             target: { weight: w, sets: setCount + 1, reps: cfg.repMax },
-            label: `${setCount + 1} × ${cfg.repMin}–${cfg.repMax} @ ${w} ק"ג`,
-            advice: `כל ${setCount} הסטים הגיעו ל־${cfg.repMax}. הוסף סט — ${setCount + 1} סטים ב־${w} ק"ג.`,
+            label: `${setCount + 1} sets × ${cfg.repMin}–${cfg.repMax} @ ${w} kg`,
+            advice: `All ${setCount} sets hit ${cfg.repMax}. Add a set — go for ${setCount + 1} × ${w} kg.`,
             action: 'add_set'
           };
         }
@@ -1440,8 +1428,8 @@
         return {
           cfg, lastWeight: w,
           target: { weight: next, sets: cfg.minSets, reps: cfg.repMin },
-          label: `${cfg.minSets} × ${cfg.repMin}–${cfg.repMax} @ ${next} ק"ג`,
-          advice: `הגעת לתקרה ב־${w} ק"ג. עלה ל־${next} ק"ג והתחל מ־${cfg.repMin} חזרות.`,
+          label: `${cfg.minSets} sets × ${cfg.repMin}–${cfg.repMax} @ ${next} kg`,
+          advice: `Ceiling reached at ${w} kg. Move up to ${next} kg and restart at ${cfg.repMin} reps.`,
           action: 'increase_weight'
         };
       }
@@ -1450,8 +1438,8 @@
       return {
         cfg, lastWeight: w,
         target: { weight: w, sets: Math.max(setCount, cfg.minSets), reps: Math.min(lowest + 1, cfg.repMax) },
-        label: `${Math.max(setCount, cfg.minSets)} × ${cfg.repMin}–${cfg.repMax} @ ${w} ק"ג`,
-        advice: `הישאר ב־${w} ק"ג והוסף חזרות — תשבור את ${topSets.map(s => s.reps).join(', ')}.`,
+        label: `${Math.max(setCount, cfg.minSets)} sets × ${cfg.repMin}–${cfg.repMax} @ ${w} kg`,
+        advice: `Stay at ${w} kg and add reps — beat ${topSets.map(s => s.reps).join(', ')}.`,
         action: 'add_reps'
       };
     }
@@ -1464,8 +1452,8 @@
       const pct = deloadPct();
 
       if (!last) {
-        return { cfg, target: null, pct, label: `דילואוד · ${cfg.minSets} × ${cfg.repMin}`,
-                 advice: 'שבוע קל. קח משקל נוח ואל תתקרב לכשל.' };
+        return { cfg, target: null, pct, label: `Deload · ${cfg.minSets} × ${cfg.repMin}`,
+                 advice: 'Light week. Pick a comfortable weight and stay well short of failure.' };
       }
 
       const w = workingWeight(last.sets);
@@ -1475,8 +1463,8 @@
       return {
         cfg, pct, lastWeight: w,
         target: { weight: target, sets: cfg.minSets, reps: cfg.repMin },
-        label: `דילואוד · ${cfg.minSets} × ${cfg.repMin} @ ${target} ק"ג`,
-        advice: `שבוע קל — ${pct}% מ־${w} ק"ג. עוצרים הרחק מכשל.`,
+        label: `Deload · ${cfg.minSets} × ${cfg.repMin} @ ${target} kg`,
+        advice: `Light week — ${pct}% of ${w} kg. Stop well short of failure.`,
         action: 'deload'
       };
     }
@@ -2214,31 +2202,31 @@
           <div class="card exercise-card${mode === 'deload' ? ' is-deload' : ''}">
             <div class="ex-head">
               <span class="reorder-handle">
-                <button class="btn-icon" ${idx === 0 ? 'disabled' : ''} onclick="moveTrackerExercise('${jsAttr(program)}', ${idx}, -1)" aria-label="העלה למעלה">▲</button>
-                <button class="btn-icon" ${idx === entries.length - 1 ? 'disabled' : ''} onclick="moveTrackerExercise('${jsAttr(program)}', ${idx}, 1)" aria-label="הורד למטה">▼</button>
+                <button class="btn-icon" ${idx === 0 ? 'disabled' : ''} onclick="moveTrackerExercise('${jsAttr(program)}', ${idx}, -1)" aria-label="Move up">▲</button>
+                <button class="btn-icon" ${idx === entries.length - 1 ? 'disabled' : ''} onclick="moveTrackerExercise('${jsAttr(program)}', ${idx}, 1)" aria-label="Move down">▼</button>
               </span>
               <h3>${idx + 1}. ${escapeHtml(entry.name)}</h3>
             </div>
 
             <div class="target-line">
               <span class="target-chip${mode === 'deload' ? ' deload' : ''}">${escapeHtml(plan.label)}</span>
-              ${plateau ? '<span class="target-chip warn">תקוע</span>' : ''}
+              ${plateau ? '<span class="target-chip warn">Plateau</span>' : ''}
             </div>
             <p class="advice">${escapeHtml(plan.advice)}</p>
 
             <div class="pr-line">
-              <span><b>שיא:</b> ${best ? `<bdi>${best.weight} ק"ג × ${best.reps}</bdi> <small><bdi>${formatDate(best.date)}</bdi></small>` : '—'}</span>
-              <span><b>אחרון:</b> ${last ? `<bdi>${escapeHtml(describeSets(last.sets))}</bdi> <small><bdi>${formatDate(last.date)}</bdi></small>` : '—'}</span>
+              <span><b>Best:</b> ${best ? `${best.weight} kg × ${best.reps} <small>(${formatDate(best.date)})</small>` : '—'}</span>
+              <span><b>Last:</b> ${last ? `${escapeHtml(describeSets(last.sets))} <small>(${formatDate(last.date)})</small>` : '—'}</span>
             </div>
 
-            ${tip ? `<div class="coach-tip"><b>המאמן:</b> ${escapeHtml(tip)}</div>` : ''}
+            ${tip ? `<div class="coach-tip"><b>Coach:</b> ${escapeHtml(tip)}</div>` : ''}
 
             <div id="sets-box-${idx}" data-target="${targetWeight}">${setRows}</div>
-            <button class="btn-add-set" onclick="addSetRowToSession(${idx})">+ הוסף סט</button>
+            <button class="btn-add-set" onclick="addSetRowToSession(${idx})">+ Add Set</button>
           </div>`;
       });
 
-      html += `<button class="btn-primary" onclick="finishWorkoutSession()">סיים אימון</button>`;
+      html += `<button class="btn-primary" onclick="finishWorkoutSession()">Finish Workout</button>`;
       container.innerHTML = html;
     }
 
@@ -2248,9 +2236,9 @@
         <div class="session-head">
           <div>
             <span class="session-date">${formatDate(todayStr())}</span>
-            <small>${saved ? `${setCount} סטים נרשמו היום` : 'אימון חדש'}</small>
+            <small>${saved ? `${setCount} sets logged today` : 'New session'}</small>
           </div>
-          ${saved ? '<span class="badge-done">נשמר</span>' : ''}
+          ${saved ? '<span class="badge-done">Logged</span>' : ''}
         </div>`;
     }
 
@@ -2262,10 +2250,10 @@
       if (week.type === 'rest') {
         return `
           <div class="coach-banner rest">
-            <strong>שבוע מנוחה · <bdi dir="ltr">${formatDate(week.start)}–${formatDate(week.end)}</bdi></strong>
-            <span>${escapeHtml(week.reason || 'המאמן המליץ על שבוע ללא אימונים.')} אימנת בכל זאת? זה נרשם כאימון רגיל.</span>
+            <strong>Rest week · ${formatDate(week.start)}–${formatDate(week.end)}</strong>
+            <span>${escapeHtml(week.reason || 'The coach suggested a week off.')} Trained anyway? It logs as a normal session.</span>
             <div class="banner-actions">
-              <button class="chip-btn" onclick="endLightWeek()">בטל סימון</button>
+              <button class="chip-btn" onclick="endLightWeek()">Clear</button>
             </div>
           </div>`;
       }
@@ -2273,28 +2261,28 @@
       return `
         <div class="light-week">
           <div class="lw-head">
-            <strong>שבוע דילואוד</strong>
-            <span dir="ltr">${formatDate(week.start)}–${formatDate(week.end)}</span>
+            <strong>Deload week</strong>
+            <span>${formatDate(week.start)}–${formatDate(week.end)}</span>
           </div>
-          <div class="mode-toggle" role="group" aria-label="סוג האימון היום">
-            <button class="${mode === 'deload' ? 'on' : ''}" onclick="setWorkoutMode('${jsAttr(program)}', 'deload')">דילואוד</button>
-            <button class="${mode === 'full' ? 'on' : ''}" onclick="setWorkoutMode('${jsAttr(program)}', 'full')">אימון מלא</button>
+          <div class="mode-toggle" role="group" aria-label="Session type today">
+            <button class="${mode === 'deload' ? 'on' : ''}" onclick="setWorkoutMode('${jsAttr(program)}', 'deload')">Deload</button>
+            <button class="${mode === 'full' ? 'on' : ''}" onclick="setWorkoutMode('${jsAttr(program)}', 'full')">Full workout</button>
           </div>
           <div class="lw-foot">
-            <label for="deload-pct">אחוז</label>
+            <label for="deload-pct">%</label>
             <input type="number" id="deload-pct" min="40" max="95" step="5" value="${deloadPct()}"
-                   onchange="setDeloadPct(this.value)" aria-label="אחוז דילואוד">
-            <button class="chip-btn" onclick="endLightWeek()">סיים עכשיו</button>
+                   onchange="setDeloadPct(this.value)" aria-label="Deload percentage">
+            <button class="chip-btn" onclick="endLightWeek()">End now</button>
           </div>
         </div>`;
     }
 
     function coachBarHtml(program, tips) {
-      const fresh = tips && tips.updatedAt ? freshnessLabel(tips.updatedAt) : 'עוד לא ביקשת עצה';
+      const fresh = tips && tips.updatedAt ? freshnessLabel(tips.updatedAt) : 'No advice requested yet';
       return `
         <div class="coach-bar">
           <button class="coach-btn" onclick="askCoach('${jsAttr(program)}')" ${coachBusy ? 'disabled' : ''}>
-            ${coachBusy ? 'מנתח…' : 'בקש עצה מהמאמן'}
+            ${coachBusy ? 'Analysing…' : 'Ask the coach'}
           </button>
           <small>${escapeHtml(fresh)}</small>
         </div>`;
@@ -2302,9 +2290,9 @@
 
     function freshnessLabel(iso) {
       const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
-      if (days <= 0) return 'עודכן היום';
-      if (days === 1) return 'עודכן אתמול';
-      return `עודכן לפני ${days} ימים`;
+      if (days <= 0) return 'Updated today';
+      if (days === 1) return 'Updated yesterday';
+      return `Updated ${days} days ago`;
     }
 
     // Deload and rest are recommendations until you accept them.
@@ -2316,11 +2304,11 @@
       const isRest = g.type === 'rest';
       return `
         <div class="coach-banner ${isRest ? 'rest' : 'deload'}">
-          <strong>${isRest ? 'המאמן ממליץ על שבוע מנוחה' : 'המאמן ממליץ על דילואוד'}</strong>
+          <strong>${isRest ? 'Coach suggests a rest week' : 'Coach suggests a deload'}</strong>
           <span>${escapeHtml(g.reason || '')}</span>
           <div class="banner-actions">
-            <button class="chip-btn" onclick="startLightWeek('${isRest ? 'rest' : 'deload'}', 0)">השבוע</button>
-            <button class="chip-btn" onclick="startLightWeek('${isRest ? 'rest' : 'deload'}', 1)">משבוע הבא</button>
+            <button class="chip-btn" onclick="startLightWeek('${isRest ? 'rest' : 'deload'}', 0)">This week</button>
+            <button class="chip-btn" onclick="startLightWeek('${isRest ? 'rest' : 'deload'}', 1)">Next week</button>
           </div>
         </div>`;
     }
@@ -2335,14 +2323,14 @@
       const auto = !done && targetWeight !== '';
       return `
         <div class="set-row${done ? ' done' : ''}" data-set="${setIdx}">
-          <span>סט ${setIdx + 1}</span>
-          <input type="number" inputmode="decimal" placeholder='ק"ג' class="w-${exIdx}${auto ? ' auto' : ''}"
+          <span>Set ${setIdx + 1}</span>
+          <input type="number" inputmode="decimal" placeholder="kg" class="w-${exIdx}${auto ? ' auto' : ''}"
                  value="${w}" ${done ? 'readonly' : ''} oninput="this.classList.remove('auto')">
-          <input type="number" inputmode="numeric" placeholder="חזרות" class="r-${exIdx}"
+          <input type="number" inputmode="numeric" placeholder="reps" class="r-${exIdx}"
                  value="${r}" ${done ? 'readonly' : ''}>
           <button class="set-ok${done ? ' on' : ''}" onclick="toggleSetConfirm(${exIdx}, ${setIdx})"
-                  aria-label="${done ? 'פתח לעריכה' : 'אשר סט'}">✓</button>
-          <button class="set-del" onclick="deleteTrackerSet(${exIdx}, ${setIdx})" aria-label="מחק סט">✕</button>
+                  aria-label="${done ? 'Reopen for editing' : 'Confirm set'}">✓</button>
+          <button class="set-del" onclick="deleteTrackerSet(${exIdx}, ${setIdx})" aria-label="Delete set">✕</button>
         </div>`;
     }
 
@@ -2414,8 +2402,8 @@
         return;
       }
 
-      if (isNaN(read.weight)) return window.showToast('רשום משקל לפני אישור הסט.', true);
-      if (isNaN(read.reps)) return window.showToast('רשום חזרות לפני אישור הסט.', true);
+      if (isNaN(read.weight)) return window.showToast('Enter a weight before confirming the set.', true);
+      if (isNaN(read.reps)) return window.showToast('Enter reps before confirming the set.', true);
 
       const s = ensureTodaySession(program);
       let rec = s.exercises.find(e => e.name === entry.name);
@@ -2456,7 +2444,7 @@
       const box = document.getElementById(`sets-box-${exIdx}`);
       box.querySelectorAll('.set-row').forEach((row, i) => {
         row.dataset.set = i;
-        row.querySelector('span').textContent = `סט ${i + 1}`;
+        row.querySelector('span').textContent = `Set ${i + 1}`;
         row.querySelector('.set-ok').setAttribute('onclick', `toggleSetConfirm(${exIdx}, ${i})`);
         row.querySelector('.set-del').setAttribute('onclick', `deleteTrackerSet(${exIdx}, ${i})`);
       });
@@ -2507,7 +2495,7 @@
       if (!session.exercises.length) {
         pruneEmptySession(session);
         saveLocal();
-        return window.showToast('רשום לפחות סט אחד לפני שמירה.', true);
+        return window.showToast('Log at least one set before saving.', true);
       }
 
       session.deload = getWorkoutMode(program) === 'deload';
@@ -2516,9 +2504,9 @@
       renderHistoryPrograms();
 
       if (incomplete) {
-        window.showToast(`נשמר. ${incomplete} שורות חלקיות לא נשמרו — חסר משקל או חזרות.`, true);
+        window.showToast(`Saved. ${incomplete} incomplete rows were skipped — missing weight or reps.`, true);
       } else {
-        window.showToast(added ? `האימון נשמר. ${added} סטים נוספו.` : 'האימון נשמר.');
+        window.showToast(added ? `Workout saved. ${added} sets added.` : 'Workout saved.');
       }
     }
 
@@ -2897,12 +2885,12 @@
 
     const COACH_SCHEMA_HINT = `Return ONLY JSON matching:
 {
-  "overall": "2-3 sentence summary, in Hebrew",
-  "guidance": { "type": "deload" | "rest" | "none", "reason": "short reason, in Hebrew" },
+  "overall": "2-3 sentence summary",
+  "guidance": { "type": "deload" | "rest" | "none", "reason": "short reason" },
   "exercises": [
     { "name": "<exact exercise name, copied verbatim from the data>",
       "action": "increase_weight" | "add_set" | "add_reps" | "dropset" | "swap" | "hold",
-      "detail": "one short actionable sentence, in Hebrew" }
+      "detail": "one short actionable sentence" }
   ]
 }`;
 
@@ -2915,31 +2903,29 @@ A deterministic engine already computed the routine next step for each exercise 
 - when a lifter is stalling and should add a set (moving Double toward Triple),
 - when to finish an exercise with a drop set for extra intensity,
 - when an exercise has stopped working and should be swapped,
-- when accumulated fatigue calls for a deload week ("deload") or a full rest week ("rest").
-
-Write every user-facing string in Hebrew.`;
+- when accumulated fatigue calls for a deload week ("deload") or a full rest week ("rest").`;
 
     // Called from the workout screen, scoped to the program being trained.
     async function askCoach(program) {
       if (coachBusy) return;
       const payload = buildCoachPayload(program);
       if (!payload.length) {
-        return window.showToast('אין עדיין מספיק היסטוריה באימון הזה כדי לנתח.', true);
+        return window.showToast('Not enough history in this workout to analyse yet.', true);
       }
 
       coachBusy = true;
       renderWorkoutSession(program);
-      window.showToast('שואל את המאמן…');
+      window.showToast('Asking the coach…');
 
       try {
         const advice = await requestCoachAdvice(payload);
-        if (!advice) throw new Error('לא הצלחתי לקרוא את התשובה.');
+        if (!advice) throw new Error('Could not read the response.');
         advice.updatedAt = new Date().toISOString();
         window.coachTips.byProgram[program] = advice;
         saveLocal();
-        window.showToast('העצה עודכנה.');
+        window.showToast('Advice updated.');
       } catch (e) {
-        window.showToast('לא הצלחתי לקבל עצה: ' + e.message, true);
+        window.showToast('Could not get advice: ' + e.message, true);
       } finally {
         coachBusy = false;
         renderWorkoutSession(program);
@@ -2963,16 +2949,16 @@ ${COACH_SCHEMA_HINT}`;
     // The AI Coach screen keeps a whole-training-plan view across all programs.
     async function runAiAnalysis() {
       const payload = buildCoachPayload(null);
-      if (!payload.length) return window.showToast('רשום כמה אימונים קודם כדי שיהיה מה לנתח.', true);
+      if (!payload.length) return window.showToast('Log a few workouts first so there is data to analyse.', true);
 
       const card = document.getElementById('ai-response-card');
       const textEl = document.getElementById('ai-response-text');
       card.style.display = 'block';
-      textEl.innerText = 'מנתח את האימונים וההתקדמות…';
+      textEl.innerText = 'Analysing your workouts and progress…';
 
       try {
         const advice = await requestCoachAdvice(payload);
-        if (!advice) { textEl.innerText = 'לא הצלחתי לקרוא את התשובה מהמאמן.'; return; }
+        if (!advice) { textEl.innerText = 'Could not read the coach response.'; return; }
 
         advice.updatedAt = new Date().toISOString();
         // Fan the advice out to each program so it also shows inside the workout.
@@ -2988,9 +2974,9 @@ ${COACH_SCHEMA_HINT}`;
         renderCoachSummary(advice, textEl);
         const program = currentProgram();
         if (program && window.programs[program]) renderWorkoutSession(program);
-        window.showToast('העצה עודכנה — הטיפים מופיעים בתוך האימון.');
+        window.showToast('Advice updated — tips now show inside your workout.');
       } catch (e) {
-        textEl.innerText = 'שגיאה בחיבור למאמן: ' + e.message;
+        textEl.innerText = 'Error connecting to the coach: ' + e.message;
       }
     }
 
@@ -3024,12 +3010,12 @@ ${COACH_SCHEMA_HINT}`;
     }
 
     const ACTION_LABEL = {
-      increase_weight: 'העלה משקל',
-      add_set: 'הוסף סט',
-      add_reps: 'הוסף חזרות',
-      dropset: 'סיים בדרופ סט',
-      swap: 'החלף תרגיל',
-      hold: 'השאר כמו שזה'
+      increase_weight: 'Add weight',
+      add_set: 'Add a set',
+      add_reps: 'Add reps',
+      dropset: 'Finish with a drop set',
+      swap: 'Swap exercise',
+      hold: 'Hold steady'
     };
 
     function renderCoachSummary(tips, el) {
@@ -3040,11 +3026,11 @@ ${COACH_SCHEMA_HINT}`;
       if (g && g.type && g.type !== 'none') {
         const isRest = g.type === 'rest';
         html += `<div class="coach-banner ${isRest ? 'rest' : 'deload'}" style="margin-bottom:12px;">
-                   <strong>${isRest ? 'מומלץ שבוע מנוחה' : 'מומלץ דילואוד'}</strong>
+                   <strong>${isRest ? 'Rest week recommended' : 'Deload recommended'}</strong>
                    <span>${escapeHtml(g.reason || '')}</span>
                    <div class="banner-actions">
-                     <button class="chip-btn" onclick="startLightWeek('${isRest ? 'rest' : 'deload'}', 0)">השבוע</button>
-                     <button class="chip-btn" onclick="startLightWeek('${isRest ? 'rest' : 'deload'}', 1)">משבוע הבא</button>
+                     <button class="chip-btn" onclick="startLightWeek('${isRest ? 'rest' : 'deload'}', 0)">This week</button>
+                     <button class="chip-btn" onclick="startLightWeek('${isRest ? 'rest' : 'deload'}', 1)">Next week</button>
                    </div>
                  </div>`;
       }
@@ -3052,11 +3038,11 @@ ${COACH_SCHEMA_HINT}`;
       if (Array.isArray(tips.exercises) && tips.exercises.length) {
         html += tips.exercises.map(e => `
           <div class="coach-row">
-            <span class="action-chip action-${escapeHtml(e.action || 'hold')}">${escapeHtml(ACTION_LABEL[e.action] || e.action || 'הערה')}</span>
+            <span class="action-chip action-${escapeHtml(e.action || 'hold')}">${escapeHtml(ACTION_LABEL[e.action] || e.action || 'Note')}</span>
             <span><b>${escapeHtml(e.name || '')}</b> — ${escapeHtml(e.detail || '')}</span>
           </div>`).join('');
       }
-      el.innerHTML = html || 'לא התקבלה עצה.';
+      el.innerHTML = html || 'No advice returned.';
     }
 
     function populateAnalyticsPicker() {
