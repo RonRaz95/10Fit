@@ -3,7 +3,8 @@
 A gym companion that runs as an installable web app on your phone, works offline,
 and manages progressive overload for you.
 
-No build step, no server, no dependencies to install — three static files.
+No build step, no server, no dependencies to install — three static files plus
+icons.
 
 ---
 
@@ -13,15 +14,19 @@ No build step, no server, no dependencies to install — three static files.
 set as you finish it. Confirmed sets are saved the moment you tap the check mark,
 so closing the app mid-workout can't lose them.
 
-**Tells you what to lift.** Every exercise carries its own progression scheme. The
-app reads your history and prefills the weight you should be on today, along with
-the set and rep target.
+**Tells you what to lift.** Every exercise carries its own sets, rep range and
+weight step. The app reads your history and prefills the weight you should be on
+today, along with the set and rep target.
 
 **Remembers your best.** Each exercise shows your all-time best set and your last
 performance, so you know what you're chasing.
 
 **Keeps a full history.** Browse by workout name, then by date, then open any past
 session to fix a mistake — weights, reps, exercise order, or delete it entirely.
+
+**Starts you off quickly.** Four preset splits — Push/Pull/Legs, Upper/Lower, Bro
+Split (5 day) and Full Body (3 day) — load straight into your programs, or build
+your own from a database of 77 exercises.
 
 **Flags stalls, doesn't decide for you.** Each exercise card shows how many
 sessions in a row went by with no progress. What to do about it — push through,
@@ -179,7 +184,7 @@ are cached best-effort, so an unreachable CDN can't stop the worker installing.
 | Screen | Purpose |
 |---|---|
 | Workout Tracker | Train: targets, PRs, per-set logging, stall counter, deload flag |
-| Program Builder | Build programs, order exercises, set progression schemes |
+| Program Builder | Preset splits, build programs, order exercises, set sets/reps/steps |
 | Muscles & Exercises | Manage the exercise database |
 | Workout History | Browse and edit past sessions |
 | Analytics | Progress over time, per exercise |
