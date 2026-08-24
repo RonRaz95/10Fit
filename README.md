@@ -32,10 +32,7 @@ ease off, swap the exercise — is your call.
 ## The progression engine
 
 This is the core of the app: plain deterministic code, unambiguous rules, no
-guesswork.
-
-### Double Progression
-
+guesswork. It follows Double Progression — the only scheme the app supports.
 Hold the weight until every set reaches the top of the rep range, then add weight
 and restart at the bottom.
 
@@ -49,20 +46,6 @@ With `2 sets × 6–10 reps, +5 kg`:
 | **50 kg × 10, 10** | **Move up to 55 kg, restart at 6** |
 | 55 kg × 7, 6 | Stay at 55, add reps |
 
-### Triple Progression
-
-Same, but sets come before weight: when every set hits the ceiling, add a set
-first. Only once you're at the maximum set count *and* the ceiling does the weight
-go up — and then the set count resets.
-
-With `2–3 sets × 6–10 reps, +5 kg`:
-
-| Last session | What the app tells you |
-|---|---|
-| 50 kg × 10, 10 | Add a third set |
-| 50 kg × 10, 10, 8 | Stay at 50, add reps |
-| **50 kg × 10, 10, 10** | **Move up to 55 kg, back to 2 sets** |
-
 ### Bodyweight exercises
 
 Pull-ups, dips and push-ups can't be loaded like a barbell, so they're handled
@@ -75,8 +58,6 @@ What changes:
 - **At the rep ceiling**, if you've set a weight step it tells you to add that to
   a belt. With the step at `0` — no way to add load — it tells you to raise the
   rep range or add a set, rather than inventing a weight.
-- **A deload cuts reps, not weight.** Taking 85% of "0 kg" is still zero, so a
-  bodyweight deload drops the rep target instead.
 - **Volume is counted in reps**, since there are no kilos to multiply, and the
   progress chart plots your best set in reps instead of a flat line on zero.
 
@@ -84,9 +65,9 @@ Put weight on a belt and it goes back to charting and progressing by added load.
 
 ### Configuring it
 
-Per exercise, via the ⚙ button in the program editor: scheme, load type, starting
-sets, max sets, rep range, and weight increment. Defaults are Double, 2 sets, 6–10
-reps, +2.5 kg — and bodyweight with no increment for the movements that need it.
+Per exercise, via the ⚙ button in the program editor: load type, sets, rep range,
+and weight increment. Defaults are 2 sets, 6–10 reps, +2.5 kg — and bodyweight
+with no increment for the movements that need it.
 
 ### Stall detection
 

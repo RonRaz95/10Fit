@@ -760,12 +760,6 @@
         </button>
       </div>
 
-      <label>Scheme</label>
-      <select id="scheme-type" onchange="onSchemeTypeChange()">
-        <option value="double">Double Progression (reps → weight)</option>
-        <option value="triple">Triple Progression (reps → sets → weight)</option>
-      </select>
-
       <label>Load Type</label>
       <select id="scheme-bodyweight" onchange="onSchemeTypeChange()">
         <option value="false">Weighted (barbell, dumbbell, machine)</option>
@@ -773,16 +767,8 @@
       </select>
       <p class="hint" id="scheme-bw-hint" style="display:none;">The weight column becomes added load from a belt or vest. Leave it at 0 for pure bodyweight, and set the step below to 0 if you can't add weight at all.</p>
 
-      <div style="display:flex; gap:8px;">
-        <div style="flex:1;">
-          <label>Starting Sets</label>
-          <input type="number" id="scheme-min-sets" min="1" inputmode="numeric">
-        </div>
-        <div style="flex:1;" id="scheme-max-sets-field">
-          <label>Max Sets</label>
-          <input type="number" id="scheme-max-sets" min="1" inputmode="numeric">
-        </div>
-      </div>
+      <label>Sets</label>
+      <input type="number" id="scheme-min-sets" min="1" inputmode="numeric">
 
       <div style="display:flex; gap:8px;">
         <div style="flex:1;">
@@ -938,9 +924,7 @@
     window.programOrder = safeParse('fit_program_order', null);
 
     const PROGRESSION_DEFAULTS = {
-      scheme: 'double',   // 'double' | 'triple'
       minSets: 2,
-      maxSets: 3,
       repMin: 6,
       repMax: 10,
       increment: 2.5,
@@ -1172,16 +1156,6 @@
       const allAtCeiling = setCount >= cfg.minSets && topSets.every(s => s.reps >= cfg.repMax);
 
       if (allAtCeiling) {
-        if (cfg.scheme === 'triple' && setCount < cfg.maxSets) {
-          return {
-            cfg, lastWeight: w,
-            target: { weight: w, sets: setCount + 1, reps: cfg.repMax },
-            label: `${setCount + 1} sets × ${cfg.repMin}–${cfg.repMax}${loadSuffix(cfg, w)}`,
-            advice: `All ${setCount} sets hit ${cfg.repMax}. Add a set — go for ${setCount + 1} sets${loadPhrase(cfg, w)}.`,
-            action: 'add_set'
-          };
-        }
-
         /* Bodyweight with no way to add load can only progress by reps, so the
            ceiling means the range itself is too easy — inventing a weight here
            was what produced "move up to 2.5 kg" on pull-ups. */
@@ -1246,11 +1220,6 @@
     function loadSuffix(cfg, weight) {
       if (!cfg.bodyweight) return ` @ ${weight} kg`;
       return weight > 0 ? ` @ BW +${weight} kg` : ' @ bodyweight';
-    }
-
-    function loadPhrase(cfg, weight) {
-      if (!cfg.bodyweight) return ` at ${weight} kg`;
-      return weight > 0 ? ` at bodyweight +${weight} kg` : ' at bodyweight';
     }
 
     /* Did the lifter progress from one session to the next on this exercise?
@@ -1662,11 +1631,10 @@
 
     function schemeSummary(entry) {
       const c = normalizeEntry(entry);
-      const sets = c.scheme === 'triple' ? `${c.minSets}–${c.maxSets}` : `${c.minSets}`;
       const step = c.bodyweight
         ? (c.increment > 0 ? `BW · +${c.increment}kg` : 'BW · reps only')
         : `+${c.increment}kg`;
-      return `${c.scheme === 'triple' ? 'Triple' : 'Double'} · ${sets} × ${c.repMin}–${c.repMax} · ${step}`;
+      return `${c.minSets} × ${c.repMin}–${c.repMax} · ${step}`;
     }
 
     function reorderableRow({ index, total, label, sub, moveFn, removeFn, editFn }) {
@@ -1883,10 +1851,8 @@
     function openSchemeEditorFor(entry) {
       const c = normalizeEntry(entry);
       document.getElementById('scheme-modal-title').textContent = c.name;
-      document.getElementById('scheme-type').value = c.scheme;
       document.getElementById('scheme-bodyweight').value = String(!!c.bodyweight);
       document.getElementById('scheme-min-sets').value = c.minSets;
-      document.getElementById('scheme-max-sets').value = c.maxSets;
       document.getElementById('scheme-rep-min').value = c.repMin;
       document.getElementById('scheme-rep-max').value = c.repMax;
       document.getElementById('scheme-increment').value = c.increment;
@@ -1895,9 +1861,7 @@
     }
 
     function onSchemeTypeChange() {
-      const isTriple = document.getElementById('scheme-type').value === 'triple';
       const isBw = document.getElementById('scheme-bodyweight').value === 'true';
-      document.getElementById('scheme-max-sets-field').style.display = isTriple ? '' : 'none';
       document.getElementById('scheme-bw-hint').style.display = isBw ? '' : 'none';
       document.getElementById('scheme-increment-label').textContent =
         isBw ? 'Added Weight Step (kg, 0 if you can\'t add load)' : 'Weight Step (kg)';
@@ -1911,10 +1875,8 @@
     function saveSchemeChanges() {
       if (!schemeEditTarget) return closeSchemeModal();
 
-      const scheme = document.getElementById('scheme-type').value;
       const bodyweight = document.getElementById('scheme-bodyweight').value === 'true';
       const minSets = parseInt(document.getElementById('scheme-min-sets').value, 10);
-      const maxSets = parseInt(document.getElementById('scheme-max-sets').value, 10);
       const repMin = parseInt(document.getElementById('scheme-rep-min').value, 10);
       const repMax = parseInt(document.getElementById('scheme-rep-max').value, 10);
       const increment = parseFloat(document.getElementById('scheme-increment').value);
@@ -1924,17 +1886,12 @@
       // Bodyweight may legitimately have no way to add load, so 0 is allowed there.
       if (isNaN(increment) || increment < 0) return window.showToast('Weight step is not valid.', true);
       if (!bodyweight && !(increment > 0)) return window.showToast('Weight step must be greater than 0.', true);
-      if (scheme === 'triple' && !(maxSets >= minSets)) {
-        return window.showToast('Max sets must be at least the starting sets.', true);
-      }
 
       const { list, index } = schemeEditTarget;
       list[index] = {
         ...list[index],
-        scheme,
         bodyweight,
         minSets,
-        maxSets: scheme === 'triple' ? maxSets : minSets,
         repMin,
         repMax,
         increment
