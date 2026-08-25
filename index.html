@@ -454,6 +454,14 @@
        than alarm-colored. The app never suggests what to do about it. */
     .target-chip.info { background: var(--bg-input); color: var(--text-sub); border-color: var(--border); }
 
+    .unit-toggle {
+      width: auto; margin: 0; padding: 3px 12px;
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+      background: var(--bg-input); color: var(--text-sub);
+      border: 1px solid var(--border); border-radius: 999px; cursor: pointer;
+    }
+    .unit-toggle.on { background: rgba(139, 123, 255, 0.15); color: #b3a8ff; border-color: #8b7bff; }
+
     .advice { font-size: 0.82rem; color: var(--text-sub); line-height: 1.45; margin-bottom: 8px; }
 
     .pr-line {
@@ -1113,12 +1121,33 @@
       const sameWeight = sets.every(s => s.weight === w);
       const reps = sets.map(s => s.reps).join(', ');
       if (!sameWeight) return sets.map(s => `${formatLoad(s.weight, isBodyweight)}×${s.reps}`).join(' | ');
-      return `${formatLoad(w, isBodyweight)} × ${reps}`;
+      // Showing the pounds it was typed in makes a forgotten unit toggle
+      // obvious, rather than silently logging 100 lb as 100 kg.
+      const lb = sets[0].lb !== undefined && sets.every(s => s.lb === sets[0].lb)
+        ? ` (${sets[0].lb} lb)` : '';
+      return `${formatLoad(w, isBodyweight)}${lb} × ${reps}`;
     }
 
     function formatLoad(weight, isBodyweight) {
       if (!isBodyweight) return `${weight} kg`;
       return weight > 0 ? `BW +${weight} kg` : 'BW';
+    }
+
+    /* Some machines carry only pound markings, so a weight can be typed in lb
+       and is converted on the way in. Storage stays kg everywhere — rounding to
+       whole kilos keeps 100 lb reading as 45 and 45 lb as 20. The drift is
+       under half a kilo and, more importantly, it is stable: the same pin
+       always produces the same number, so history never looks like it moved. */
+    const LB_TO_KG = 0.453592;
+
+    function lbToKg(lb) {
+      return Math.round(lb * LB_TO_KG);
+    }
+
+    // Machine stacks step in multiples of five pounds, so a target converted
+    // back for prefilling lands on a pin that actually exists.
+    function kgToLb(kg) {
+      return Math.round(kg / LB_TO_KG / 5) * 5;
     }
 
     // Which exercises are bodyweight, looked up by name across all programs.
@@ -1273,6 +1302,23 @@
     let historyPickedProgram = null;
     let openSessionId = null;
     let deloadToggle = false;   // manual deload flag for today, before a session exists
+    let trackerUnit = {};       // exercise name -> 'kg' | 'lb', for this session only
+
+    /* The reading unit belongs to the machine in front of you, not to the
+       exercise: the same leg curl is kilos at one gym and pounds at another.
+       So it defaults to whatever the last logged set was typed in, and one tap
+       overrides it for today. */
+    function unitFor(exName) {
+      if (trackerUnit[exName]) return trackerUnit[exName];
+      const hist = getExerciseHistory(exName);
+      const last = hist[hist.length - 1];
+      return last && last.sets.some(s => s.lb !== undefined) ? 'lb' : 'kg';
+    }
+
+    function toggleUnit(program, exName) {
+      trackerUnit[exName] = unitFor(exName) === 'lb' ? 'kg' : 'lb';
+      renderWorkoutSession(program);
+    }
 
     document.addEventListener("DOMContentLoaded", () => {
       migrateData();
@@ -1971,10 +2017,11 @@
 
         const targetWeight = plan.target ? plan.target.weight : '';
         const rowCount = Math.max(savedSets.length, plan.target ? plan.target.sets : entry.minSets, 1);
+        const unit = entry.bodyweight ? 'kg' : unitFor(entry.name);
 
         let setRows = '';
         for (let i = 0; i < rowCount; i++) {
-          setRows += setRowHtml(idx, i, savedSets[i], targetWeight, entry.bodyweight);
+          setRows += setRowHtml(idx, i, savedSets[i], targetWeight, entry.bodyweight, unit);
         }
 
         html += `
@@ -1990,6 +2037,9 @@
             <div class="target-line">
               <span class="target-chip">${escapeHtml(plan.label)}</span>
               ${stuck > 0 ? `<span class="target-chip info">${stuck} session${stuck === 1 ? '' : 's'} without progress</span>` : ''}
+              ${entry.bodyweight ? '' : `<button class="unit-toggle${unit === 'lb' ? ' on' : ''}"
+                onclick="toggleUnit('${jsAttr(program)}', '${jsAttr(entry.name)}')"
+                aria-label="Entering weight in ${unit === 'lb' ? 'pounds' : 'kilos'} — tap to switch">${unit}</button>`}
             </div>
             <p class="advice">${escapeHtml(plan.advice)}</p>
 
@@ -2026,20 +2076,25 @@
     /* A confirmed set is locked, green and already persisted; an open row is
        editable. The weight is a real value, not a hint, because saving needs
        a number there — a grey placeholder got sets discarded silently. */
-    function setRowHtml(exIdx, setIdx, savedSet, targetWeight, isBodyweight) {
+    function setRowHtml(exIdx, setIdx, savedSet, targetWeight, isBodyweight, rowUnit) {
       const done = !!savedSet;
-      const w = done ? savedSet.weight : (targetWeight !== '' ? targetWeight : '');
+      const inLb = rowUnit === 'lb' && !isBodyweight;
+      /* A set typed in pounds reads back in pounds: showing its converted kilos
+         in a field labelled "lb" would invite re-entering them as pounds. */
+      const w = done
+        ? (inLb && savedSet.lb !== undefined ? savedSet.lb : savedSet.weight)
+        : (targetWeight !== '' ? (inLb ? kgToLb(targetWeight) : targetWeight) : '');
       const r = done ? savedSet.reps : '';
       const auto = !done && targetWeight !== '';
       // For bodyweight the column is added load, so it is labelled "+kg" and 0
       // is a meaningful entry rather than a missing one.
-      const unit = isBodyweight ? '+kg' : 'kg';
+      const unit = isBodyweight ? '+kg' : rowUnit;
       return `
         <div class="set-row${done ? ' done' : ''}" data-set="${setIdx}">
           <span>Set ${setIdx + 1}</span>
           <input type="number" inputmode="decimal" placeholder="${unit}" class="w-${exIdx}${auto ? ' auto' : ''}"
                  value="${w}" ${done ? 'readonly' : ''} oninput="this.classList.remove('auto')"
-                 aria-label="${isBodyweight ? 'Added weight in kg' : 'Weight in kg'}">
+                 aria-label="${isBodyweight ? 'Added weight in kg' : `Weight in ${inLb ? 'pounds' : 'kg'}`}">
           <input type="number" inputmode="numeric" placeholder="reps" class="r-${exIdx}"
                  value="${r}" ${done ? 'readonly' : ''}>
           <button class="set-ok${done ? ' on' : ''}" onclick="toggleSetConfirm(${exIdx}, ${setIdx})"
@@ -2123,7 +2178,13 @@
       const s = ensureTodaySession(program);
       let rec = s.exercises.find(e => e.name === entry.name);
       if (!rec) { rec = { name: entry.name, sets: [] }; s.exercises.push(rec); }
-      rec.sets[setIdx] = { weight: read.weight, reps: read.reps };
+      /* Pounds are converted here and only kilos are stored, so every reader
+         downstream — progression, volume, charts, the stall count — keeps
+         working in one unit. The typed number is kept alongside so the row can
+         show what you actually read off the machine. */
+      rec.sets[setIdx] = (unitFor(entry.name) === 'lb' && !entry.bodyweight)
+        ? { weight: lbToKg(read.weight), reps: read.reps, lb: read.weight }
+        : { weight: read.weight, reps: read.reps };
       rec.sets = rec.sets.filter(Boolean);
 
       saveLocal();

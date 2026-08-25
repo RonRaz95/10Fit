@@ -68,6 +68,30 @@ What changes:
 
 Put weight on a belt and it goes back to charting and progressing by added load.
 
+### Machines marked only in pounds
+
+Some machines have lost their kilo markings, and the same machine can be kilos
+at one gym and pounds at another — so the unit belongs to the machine in front
+of you, not to the exercise. Each exercise card carries a **kg / lb** toggle.
+
+Tap **lb** and you type what the machine says. The app converts on the way in
+and **stores kilos**, rounded to whole numbers:
+
+| Machine | Exact | Stored |
+|---|---|---|
+| 45 lb | 20.4 | 20 kg |
+| 100 lb | 45.4 | 45 kg |
+
+The rounding drifts by under half a kilo, and it is stable — the same pin always
+produces the same number, so history never looks like it moved when it didn't.
+Because only kilos are stored, progression, volume, charts and the stall counter
+all keep working in one unit with no special cases.
+
+The number you typed is kept alongside, so the row reads back in pounds and the
+history line shows `45 kg (100 lb) × 12`. That makes a forgotten toggle obvious
+instead of silently logging 100 lb as 100 kg. The toggle also defaults to
+whatever the last logged set used, so a pound machine stays on pounds.
+
 ### Configuring it
 
 Per exercise, via the ⚙ button in the program editor: load type, sets, rep range,
@@ -149,7 +173,7 @@ Everything lives in `localStorage` on the device. Nothing is uploaded.
 
 | Key | Contents |
 |---|---|
-| `fit_sessions` | Every workout: program, date, exercises, sets, deload flag — the source of truth |
+| `fit_sessions` | Every workout: program, date, exercises, sets (kg, plus the pounds typed), deload flag — the source of truth |
 | `fit_programs` | Programs, each exercise with its progression config |
 | `fit_program_order` | Display order of programs |
 | `fit_ex_db` | Exercise database (77 built in, across 6 muscle groups) |
