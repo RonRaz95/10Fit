@@ -1123,7 +1123,8 @@
       if (!sameWeight) return sets.map(s => `${formatLoad(s.weight, isBodyweight)}×${s.reps}`).join(' | ');
       // Showing the pounds it was typed in makes a forgotten unit toggle
       // obvious, rather than silently logging 100 lb as 100 kg.
-      const lb = sets[0].lb !== undefined && sets.every(s => s.lb === sets[0].lb)
+      // Zero is pure bodyweight, so it reads as "BW" with no pointless "(0 lb)".
+      const lb = sets[0].lb && sets.every(s => s.lb === sets[0].lb)
         ? ` (${sets[0].lb} lb)` : '';
       return `${formatLoad(w, isBodyweight)}${lb} × ${reps}`;
     }
@@ -2017,7 +2018,7 @@
 
         const targetWeight = plan.target ? plan.target.weight : '';
         const rowCount = Math.max(savedSets.length, plan.target ? plan.target.sets : entry.minSets, 1);
-        const unit = entry.bodyweight ? 'kg' : unitFor(entry.name);
+        const unit = unitFor(entry.name);
 
         let setRows = '';
         for (let i = 0; i < rowCount; i++) {
@@ -2037,9 +2038,9 @@
             <div class="target-line">
               <span class="target-chip">${escapeHtml(plan.label)}</span>
               ${stuck > 0 ? `<span class="target-chip info">${stuck} session${stuck === 1 ? '' : 's'} without progress</span>` : ''}
-              ${entry.bodyweight ? '' : `<button class="unit-toggle${unit === 'lb' ? ' on' : ''}"
+              <button class="unit-toggle${unit === 'lb' ? ' on' : ''}"
                 onclick="toggleUnit('${jsAttr(program)}', '${jsAttr(entry.name)}')"
-                aria-label="Entering weight in ${unit === 'lb' ? 'pounds' : 'kilos'} — tap to switch">${unit}</button>`}
+                aria-label="Entering weight in ${unit === 'lb' ? 'pounds' : 'kilos'} — tap to switch">${unit}</button>
             </div>
             <p class="advice">${escapeHtml(plan.advice)}</p>
 
@@ -2078,7 +2079,8 @@
        a number there — a grey placeholder got sets discarded silently. */
     function setRowHtml(exIdx, setIdx, savedSet, targetWeight, isBodyweight, rowUnit) {
       const done = !!savedSet;
-      const inLb = rowUnit === 'lb' && !isBodyweight;
+      // Belt plates come in pounds too, so added load converts the same way.
+      const inLb = rowUnit === 'lb';
       /* A set typed in pounds reads back in pounds: showing its converted kilos
          in a field labelled "lb" would invite re-entering them as pounds. */
       const w = done
@@ -2088,13 +2090,13 @@
       const auto = !done && targetWeight !== '';
       // For bodyweight the column is added load, so it is labelled "+kg" and 0
       // is a meaningful entry rather than a missing one.
-      const unit = isBodyweight ? '+kg' : rowUnit;
+      const unit = isBodyweight ? `+${rowUnit}` : rowUnit;
       return `
         <div class="set-row${done ? ' done' : ''}" data-set="${setIdx}">
           <span>Set ${setIdx + 1}</span>
           <input type="number" inputmode="decimal" placeholder="${unit}" class="w-${exIdx}${auto ? ' auto' : ''}"
                  value="${w}" ${done ? 'readonly' : ''} oninput="this.classList.remove('auto')"
-                 aria-label="${isBodyweight ? 'Added weight in kg' : `Weight in ${inLb ? 'pounds' : 'kg'}`}">
+                 aria-label="${isBodyweight ? 'Added' : 'Weight'} in ${inLb ? 'pounds' : 'kg'}">
           <input type="number" inputmode="numeric" placeholder="reps" class="r-${exIdx}"
                  value="${r}" ${done ? 'readonly' : ''}>
           <button class="set-ok${done ? ' on' : ''}" onclick="toggleSetConfirm(${exIdx}, ${setIdx})"
@@ -2182,7 +2184,7 @@
          downstream — progression, volume, charts, the stall count — keeps
          working in one unit. The typed number is kept alongside so the row can
          show what you actually read off the machine. */
-      rec.sets[setIdx] = (unitFor(entry.name) === 'lb' && !entry.bodyweight)
+      rec.sets[setIdx] = unitFor(entry.name) === 'lb'
         ? { weight: lbToKg(read.weight), reps: read.reps, lb: read.weight }
         : { weight: read.weight, reps: read.reps };
       rec.sets = rec.sets.filter(Boolean);

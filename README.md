@@ -92,6 +92,10 @@ history line shows `45 kg (100 lb) × 12`. That makes a forgotten toggle obvious
 instead of silently logging 100 lb as 100 kg. The toggle also defaults to
 whatever the last logged set used, so a pound machine stays on pounds.
 
+Bodyweight exercises get the toggle too, since belt plates come in pounds as
+well: `+45 lb` on a dip belt is stored as `+20 kg`. Zero still means pure
+bodyweight and reads as plain `BW`.
+
 ### Configuring it
 
 Per exercise, via the ⚙ button in the program editor: load type, sets, rep range,
