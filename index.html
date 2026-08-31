@@ -462,6 +462,13 @@
     }
     .unit-toggle.on { background: rgba(139, 123, 255, 0.15); color: #b3a8ff; border-color: #8b7bff; }
 
+    /* The history editor holds bare numbers, so each one names its own unit. */
+    .unit-field { display: block; margin: 0; }
+    .unit-field small {
+      display: block; margin-top: 2px; text-align: center;
+      font-size: 0.66rem; color: var(--text-sub); letter-spacing: 0.03em;
+    }
+
     .advice { font-size: 0.82rem; color: var(--text-sub); line-height: 1.45; margin-bottom: 8px; }
 
     .pr-line {
@@ -1108,7 +1115,7 @@
       getExerciseHistory(exName).forEach(rec => {
         rec.sets.forEach(st => {
           if (!best || st.weight > best.weight || (st.weight === best.weight && st.reps > best.reps)) {
-            best = { weight: st.weight, reps: st.reps, date: rec.date };
+            best = { weight: st.weight, reps: st.reps, date: rec.date, lb: st.lb };
           }
         });
       });
@@ -1319,6 +1326,15 @@
     function toggleUnit(program, exName) {
       trackerUnit[exName] = unitFor(exName) === 'lb' ? 'kg' : 'lb';
       renderWorkoutSession(program);
+    }
+
+    /* Every stored set is built here. There are two write paths — confirming a
+       row and finishing the workout — and when only the first converted pounds,
+       finishing silently rewrote 100 lb as 100 kg. One builder, one rule. */
+    function buildSet(exName, weight, reps) {
+      return unitFor(exName) === 'lb'
+        ? { weight: lbToKg(weight), reps, lb: weight }
+        : { weight, reps };
     }
 
     document.addEventListener("DOMContentLoaded", () => {
@@ -2045,7 +2061,7 @@
             <p class="advice">${escapeHtml(plan.advice)}</p>
 
             <div class="pr-line">
-              <span><b>Best:</b> ${best ? `${formatLoad(best.weight, entry.bodyweight)} × ${best.reps} <small>(${formatDate(best.date)})</small>` : '—'}</span>
+              <span><b>Best:</b> ${best ? `${formatLoad(best.weight, entry.bodyweight)}${best.lb ? ` (${best.lb} lb)` : ''} × ${best.reps} <small>(${formatDate(best.date)})</small>` : '—'}</span>
               <span><b>Last:</b> ${last ? `${escapeHtml(describeSets(last.sets, entry.bodyweight))} <small>(${formatDate(last.date)})</small>` : '—'}</span>
             </div>
 
@@ -2180,13 +2196,7 @@
       const s = ensureTodaySession(program);
       let rec = s.exercises.find(e => e.name === entry.name);
       if (!rec) { rec = { name: entry.name, sets: [] }; s.exercises.push(rec); }
-      /* Pounds are converted here and only kilos are stored, so every reader
-         downstream — progression, volume, charts, the stall count — keeps
-         working in one unit. The typed number is kept alongside so the row can
-         show what you actually read off the machine. */
-      rec.sets[setIdx] = unitFor(entry.name) === 'lb'
-        ? { weight: lbToKg(read.weight), reps: read.reps, lb: read.weight }
-        : { weight: read.weight, reps: read.reps };
+      rec.sets[setIdx] = buildSet(entry.name, read.weight, read.reps);
       rec.sets = rec.sets.filter(Boolean);
 
       saveLocal();
@@ -2255,7 +2265,7 @@
           const r = parseInt(row.querySelector(`.r-${idx}`).value, 10);
           if (!isNaN(w) && !isNaN(r)) {
             if (!row.classList.contains('done')) added++;
-            collected.push({ weight: w, reps: r });
+            collected.push(buildSet(entry.name, w, r));
           } else if (!isNaN(w) || !isNaN(r)) {
             incomplete++;   // half-filled: report it rather than dropping it silently
           }
@@ -2387,10 +2397,18 @@
           ${(ex.sets || []).map((st, sIdx) => `
             <div class="set-row done">
               <span>Set ${sIdx + 1}</span>
-              <input type="number" inputmode="decimal" value="${st.weight}"
-                     onchange="updateSessionSet(${exIdx}, ${sIdx}, 'weight', this.value)">
-              <input type="number" inputmode="numeric" value="${st.reps}"
-                     onchange="updateSessionSet(${exIdx}, ${sIdx}, 'reps', this.value)">
+              <label class="unit-field">
+                <input type="number" inputmode="decimal" value="${st.weight}"
+                       aria-label="Weight in kg"
+                       onchange="updateSessionSet(${exIdx}, ${sIdx}, 'weight', this.value)">
+                <small>kg${st.lb ? ` · ${st.lb} lb` : ''}</small>
+              </label>
+              <label class="unit-field">
+                <input type="number" inputmode="numeric" value="${st.reps}"
+                       aria-label="Reps"
+                       onchange="updateSessionSet(${exIdx}, ${sIdx}, 'reps', this.value)">
+                <small>reps</small>
+              </label>
               <button class="btn-icon" style="color:var(--danger)" onclick="removeSessionSet(${exIdx}, ${sIdx})" aria-label="Remove set">✕</button>
             </div>`).join('')}
           <button class="btn-add-set" onclick="addSessionSet(${exIdx})">+ Add Set</button>
@@ -2403,7 +2421,11 @@
       if (!s) return;
       const num = field === 'reps' ? parseInt(value, 10) : parseFloat(value);
       if (isNaN(num)) return;
-      s.exercises[exIdx].sets[sIdx][field] = num;
+      const set = s.exercises[exIdx].sets[sIdx];
+      // This field edits kilos, so a pound reading recorded earlier no longer
+      // describes the weight and would otherwise be shown as if it did.
+      if (field === 'weight') delete set.lb;
+      set[field] = num;
     }
 
     function addSessionSet(exIdx) {
