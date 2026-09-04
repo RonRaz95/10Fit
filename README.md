@@ -22,7 +22,8 @@ today, along with the set and rep target.
 performance, so you know what you're chasing.
 
 **Keeps a full history.** Browse by workout name, then by date, then open any past
-session to fix a mistake — weights, reps, exercise order, or delete it entirely.
+session to fix a mistake — weights, reps, the unit a weight was recorded in,
+exercise order, or delete it entirely.
 
 **Starts you off quickly.** Four preset splits — Push/Pull/Legs, Upper/Lower, Bro
 Split (5 day) and Full Body (3 day) — load straight into your programs, or build
@@ -95,6 +96,12 @@ whatever the last logged set used, so a pound machine stays on pounds.
 Bodyweight exercises get the toggle too, since belt plates come in pounds as
 well: `+45 lb` on a dip belt is stored as `+20 kg`. Zero still means pure
 bodyweight and reads as plain `BW`.
+
+Past sessions carry the same toggle, one per set, in the history editor. There
+it flips what the number *means* rather than the number itself, so a set logged
+as `100` that was really pounds becomes 45 kg in one tap — and back again. Each
+row names its unit and shows both readings (`lb · 45 kg`), because a bare number
+gives no way to tell a converted set from a kilo one.
 
 ### Configuring it
 
@@ -214,7 +221,7 @@ are cached best-effort, so an unreachable CDN can't stop the worker installing.
 | Workout Tracker | Train: targets, PRs, per-set logging, stall counter, deload flag |
 | Program Builder | Preset splits, build programs, order exercises, set sets/reps/steps |
 | Muscles & Exercises | Manage the exercise database |
-| Workout History | Browse and edit past sessions |
+| Workout History | Browse past sessions; edit weights, reps, units and order |
 | Analytics | Progress over time, per exercise |
 
 ---
