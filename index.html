@@ -5,10 +5,9 @@
   <!-- השורה הקריטית הבאה אומרת לאייפון לאפשר הימתחות לאזורים המוגנים -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
-  <!-- Defence in depth. connect-src is the important one: even if a scripting
-       bug slipped through, the stored API key could not be posted to an
-       attacker's server, only to Google. Adding a custom AI endpoint on
-       another domain means adding that domain here. -->
+  <!-- Defence in depth. connect-src is the important one: the app makes no
+       outbound calls at all, so even if a scripting bug slipped through it
+       could not post your training history to an attacker's server. -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
     script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
@@ -259,9 +258,6 @@
     button.btn-secondary { background: var(--bg-input); color: var(--text); border: 1px solid var(--border); }
     button.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
 
-    button.btn-teal { background: var(--teal); color: #0b2422; border: none; }
-    button.btn-teal:hover { background: #6adfd4; }
-
     button.btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
     button.btn-danger:hover { background: rgba(239, 91, 91, 0.12); }
 
@@ -294,17 +290,6 @@
     .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 4px; }
 
     .chart-container { position: relative; height: 250px; width: 100%; margin-top: 8px; }
-
-    .ai-box {
-      background: rgba(139, 123, 255, 0.08);
-      border: 1px solid var(--violet);
-      border-radius: 8px;
-      padding: 14px;
-      font-size: 0.9rem;
-      line-height: 1.6;
-      white-space: pre-line;
-      color: #e7e3ff;
-    }
 
     .empty-state { text-align: center; padding: 24px 12px; color: var(--text-sub); font-size: 0.88rem; }
 
@@ -460,7 +445,7 @@
       background: var(--bg-input); color: var(--text-sub);
       border: 1px solid var(--border); border-radius: 999px; cursor: pointer;
     }
-    .unit-toggle.on { background: rgba(139, 123, 255, 0.15); color: #b3a8ff; border-color: #8b7bff; }
+    .unit-toggle.on { background: rgba(139, 123, 255, 0.15); color: #b3a8ff; border-color: var(--violet); }
 
     /* The history editor holds bare numbers, so each one names its own unit. */
     #history-session-body .set-row { grid-template-columns: 46px 1fr 1fr auto auto; gap: 6px; align-items: start; }
@@ -823,7 +808,6 @@
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
           .then(reg => {
-            console.log('Service Worker registered:', reg.scope);
             reg.addEventListener('updatefound', () => {
               const newWorker = reg.installing;
               if (!newWorker) return;
@@ -976,10 +960,6 @@
       return base;
     }
 
-    function entryName(entry) {
-      return typeof entry === 'string' ? entry : (entry && entry.name) || '';
-    }
-
     function todayStr() {
       const d = new Date();
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -1087,14 +1067,6 @@
       renderWorkoutSession(program);
     }
 
-    function exerciseNamesWithHistory() {
-      const set = new Set();
-      window.sessions.forEach(s => (s.exercises || []).forEach(ex => {
-        if ((ex.sets || []).length) set.add(ex.name);
-      }));
-      return [...set].sort();
-    }
-
     function programNamesWithHistory() {
       const map = {};
       window.sessions.forEach(s => {
@@ -1170,7 +1142,7 @@
         }));
     }
 
-    /* ---- progression engine (deterministic; the AI layer sits on top) ---- */
+    /* ---- progression engine ---- */
 
     // Working weight = the heaviest weight used in that session.
     function workingWeight(sets) {
@@ -1428,8 +1400,8 @@
       document.removeEventListener('click', handleOutsideMenuClick);
     }
 
-    // historyData is no longer written directly — it is rebuilt from sessions so
-    // the analytics chart and any existing cloud backups keep working.
+    // historyData is no longer written directly — it is rebuilt from sessions,
+    // which stay the single source of truth, so the analytics chart keeps working.
     function rebuildHistoryData() {
       const out = {};
       sortedSessions().forEach(s => {
@@ -1462,9 +1434,9 @@
 
        The old version set textContent and read back innerHTML, which escapes
        < > and & but leaves quotes untouched. Since this is interpolated into
-       attributes (value="...", aria-label="..."), an exercise name or an AI
-       reply containing a double quote closed the attribute and injected a real
-       event handler — script execution with access to the stored API key. */
+       attributes (value="...", aria-label="..."), an exercise or program name
+       containing a double quote closed the attribute and injected a real event
+       handler — arbitrary script execution against your saved data. */
     function escapeHtml(str) {
       return String(str == null ? '' : str)
         .replace(/&/g, '&amp;')
